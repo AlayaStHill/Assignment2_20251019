@@ -4,8 +4,8 @@ namespace Infrastructure.Interfaces;
 public interface IProductService
 {
     void Cancel();
-    Task<IEnumerable<Product>> GetProductsAsync(); // GetProductById(string id); ??
-    Task SaveProductAsync(Product product);
-    Task UpdateProductAsync(Product product);
-    Task DeleteProductAsync(string id);
+    Task<ProductServiceResult<IEnumerable<Product>>> GetProductsAsync(); // GetProductById(string id); ??
+    Task<ProductServiceResult> SaveProductAsync(Product product);
+    Task<ProductServiceResult> UpdateProductAsync(Product product);
+    Task<ProductServiceResult> DeleteProductAsync(string id);
 }
