@@ -16,9 +16,22 @@ public class ProductService : IProductService
         _products = []; // instansierar en ny tom lista och tilldelar fältet sitt första användbara värde. Fördel: lätt att ändra logik senare, t.ex. populera listan med innehåll från fil direkt när ProductService skapas (det är bara i konstruktorn man har tillgång till inparametrar som FileRepository ex. direkt vid uppstart)
     }
 
+    // Cancel-button aktiveras bara när "nedladdning" pågår, men ändå säkra upp för att skydda mot ett scenario där Cancel anropas då _cts är disposed eller fortfarande null innan någon metod körs
     public void Cancel()
     {
-        throw new NotImplementedException();
+        if (_cts != null && !_cts.IsCancellationRequested) // efter Cancel() anropats är IsCancellationRequested == true
+        {
+            try
+            {
+                _cts.Cancel();
+            }
+            catch (ObjectDisposedException) // kastas om _cts är disposad då Cancel() anropas
+            {
+                // neutraliserat undantag, programmet kraschar ej och kan köra vidare om en ny metod anropas
+            }
+            
+        }
+        
     }
 
     public async Task<ProductServiceResult> DeleteProductAsync(string id)
