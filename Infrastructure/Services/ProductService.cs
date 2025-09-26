@@ -1,7 +1,5 @@
 ﻿using Infrastructure.Interfaces;
 using Infrastructure.Models;
-using Infrastructure.Repositories;
-using System;
 
 namespace Infrastructure.Services;
 // Registrera i App.xaml
@@ -64,7 +62,7 @@ public class ProductService : IProductService
                 return new ProductServiceResult
                 {
                     Succeeded = false,
-                    ErrorMessage = "Produkten kunde inte hittas"
+                    ErrorMessage = $"Produkten med Id {id} kunde inte hittas"
                 };
             }
 
@@ -182,8 +180,65 @@ public class ProductService : IProductService
         }
     }
 
-    public async Task<ProductServiceResult> UpdateProductAsync(Product product)
+    public async Task<ProductServiceResult> UpdateProductAsync(Product updatedProduct)
     {
-        throw new NotImplementedException();
+        try
+        {
+            _cts = new CancellationTokenSource();
+
+            FileRepositoryResult<IEnumerable<Product>> repoReadResult = await _fileRepository.ReadAsync(_cts.Token);
+            if (!repoReadResult.Succeeded)
+            {
+                return new ProductServiceResult
+                {
+                    Succeeded = false,
+                    ErrorMessage = repoReadResult.ErrorMessage ?? "Ett okänt fel inträffade vid filhämtning"
+                };
+
+            }
+            // FileRepository returnerar products eller [] om Succeeded = true och [] om false, så Data blir inte null här. ?? [] mest säker kod
+            _products = repoReadResult.Data?.ToList() ?? [];
+
+            Product? existingProduct = _products.FirstOrDefault(product => product.Id == updatedProduct.Id);
+            if (existingProduct == null)
+            {
+                return new ProductServiceResult
+                {
+                    Succeeded = false,
+                    ErrorMessage = $"Produkten med Id {updatedProduct.Id} kunde inte hittas"
+                };
+            }
+
+            _products.Remove(existingProduct);
+            _products.Add(updatedProduct);
+
+            FileRepositoryResult repoSaveResult = await _fileRepository.WriteAsync(_products, _cts.Token);
+            if (!repoSaveResult.Succeeded)
+            {
+                return new ProductServiceResult
+                {
+                    Succeeded = false,
+                    ErrorMessage = repoSaveResult.ErrorMessage ?? "Ett okänt fel inträffade vid filsparning"
+                };
+            }
+
+            return new ProductServiceResult
+            {
+                Succeeded = true
+            };
+        }
+        catch (Exception ex)
+        {
+            Cancel();
+            return new ProductServiceResult
+            {
+                Succeeded = false,
+                ErrorMessage = $"Det gick inte att uppdatera produkten: {ex.Message}"
+            };
+        }
+        finally
+        {
+            _cts.Dispose();
+        }
     }
 }
