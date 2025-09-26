@@ -3,17 +3,18 @@ using Infrastructure.Models;
 using System.Text.Json;
 
 namespace Infrastructure.Repositories;
-// baseDirectory-användning: ändras automatiskt beroende på var programmet körs ifrån (annan dator ex.), eftersom den bygger vägen dynamiskt utifrån där .exe-filen befinner sig just då..  
+ 
 public class FileRepository : IFileRepository
 {
     private readonly string _filePath;
-    private static JsonSerializerOptions _jsonOptions = new() // varför static, varför la man den här i konstruktorn i andra projektet, men inte här 
+    private static JsonSerializerOptions _jsonOptions = new() 
     {
         WriteIndented = true
     };
 
     public FileRepository()
     {
+        // baseDirectory-användning: ändras automatiskt beroende på var programmet körs ifrån (annan dator ex.), eftersom den bygger vägen dynamiskt utifrån där .exe-filen befinner sig just då.. 
         // Hämtar sökvägen till mappen där .exe-filen ligger. Sökvägen lagras i baseDirectory 
         string? baseDirectory = AppContext.BaseDirectory; // Talar om var applikationen körs ifrån: bin\Debug\net9.0-windows\ - mappen där .exe-filen ligger
         // Bygger på segmentet Data sist i sökvägen. Blir sökvägen till mappen Data som ska ligga i samma katalog som .exe
@@ -28,7 +29,7 @@ public class FileRepository : IFileRepository
 
         }  
     }
-
+    // CancellationToken cancellationToken här är kopplad till CancellationTokenSourse i ProductService, varifrån dessa metoder kan avbrytas
     public async Task<FileRepositoryResult<IEnumerable<Product>>> ReadAsync(CancellationToken cancellationToken)
     {
         if (!File.Exists(_filePath))
@@ -39,19 +40,20 @@ public class FileRepository : IFileRepository
             return new FileRepositoryResult<IEnumerable<Product>>
             {
                 Succeeded = true,
-                Data = new List<Product>()
+                Data = []
             }; 
         }
 
         string json = await File.ReadAllTextAsync(_filePath, cancellationToken);
-        // Kan innehålla text som inte kan omformatteras till json, då blir det false. Fångas upp i try eftersom det inte går att serializera.
+        // Om det är giltig text klarar denna koll, men inte giltig json att deserialisera fångas upp i catch
         if (string.IsNullOrWhiteSpace(json)) 
         {
             return new FileRepositoryResult<IEnumerable<Product>>
             {
                 Succeeded = false,
-                Error = "Filen innehöll inget giltigt JSON-format.",
-                Data = new List<Product>() // undviker NullReferenceException
+                ErrorMessage = "Filen innehöll inget giltigt JSON-format.",
+                // undviker NullReferenceException
+                Data = [] 
             };
         }
 
@@ -66,12 +68,12 @@ public class FileRepository : IFileRepository
         }
         catch (JsonException ex)
         {
-            // Om JSON var ogiltig, återställ filen till en giltig tom lista
+            // Om JSON är ogiltig, återställ filen till en giltig tom lista
             await File.WriteAllTextAsync(_filePath, "[]", cancellationToken);
             return new FileRepositoryResult<IEnumerable<Product>>
             {
                 Succeeded = false,
-                Error = $"Ogiltig JSON: {ex.Message}",
+                ErrorMessage = $"Ogiltig JSON: {ex.Message}",
                 Data = []
             };
         }
@@ -94,7 +96,7 @@ public class FileRepository : IFileRepository
             return new FileRepositoryResult
             {
                 Succeeded = false,
-                Error = $"Kunde inte spara till fil: {ex.Message}"
+                ErrorMessage = $"Kunde inte spara till fil: {ex.Message}"
             };
         }
     }

@@ -3,7 +3,7 @@
 public class ProductServiceResult
 {
     public bool Succeeded { get; set; }
-    public string? Error { get; set; }
+    public string? ErrorMessage { get; set; }
 }
 
 public class ProductServiceResult<T> : ProductServiceResult

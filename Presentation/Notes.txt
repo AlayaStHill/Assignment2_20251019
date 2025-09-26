@@ -16,6 +16,7 @@ Du måste använda dig av Git/GitHub och använda dig av olika branches när du skap
 FRÅGOR:------------------------------------
 varför registrerar man inte jsonserializer i DI-containern
 
+public async Task<ProductServiceResult<Product>> SaveProductAsync(Product product) // MÅSTE FÅNGA UPP DATA = NULL I MAINWINDOW.XAML.CS
 
-BRANCH FileRepository:
-products.json-file created
+
+Branchen:

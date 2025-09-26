@@ -3,7 +3,7 @@
 public class FileRepositoryResult
 {
     public bool Succeeded { get; set; }
-    public string? Error { get; set; }
+    public string? ErrorMessage { get; set; }
 }
 
 public class FileRepositoryResult<T> : FileRepositoryResult
