@@ -28,7 +28,7 @@ public class FileRepository : IFileRepository
 
         }  
     }
-
+    // CancellationToken cancellationToken här är kopplad till CancellationTokenSourse i ProductService, varifrån dessa metoder kan avbrytas
     public async Task<FileRepositoryResult<IEnumerable<Product>>> ReadAsync(CancellationToken cancellationToken)
     {
         if (!File.Exists(_filePath))
@@ -50,7 +50,7 @@ public class FileRepository : IFileRepository
             return new FileRepositoryResult<IEnumerable<Product>>
             {
                 Succeeded = false,
-                Error = "Filen innehöll inget giltigt JSON-format.",
+                ErrorMessage = "Filen innehöll inget giltigt JSON-format.",
                 Data = new List<Product>() // undviker NullReferenceException
             };
         }
@@ -71,7 +71,7 @@ public class FileRepository : IFileRepository
             return new FileRepositoryResult<IEnumerable<Product>>
             {
                 Succeeded = false,
-                Error = $"Ogiltig JSON: {ex.Message}",
+                ErrorMessage = $"Ogiltig JSON: {ex.Message}",
                 Data = []
             };
         }
@@ -94,7 +94,7 @@ public class FileRepository : IFileRepository
             return new FileRepositoryResult
             {
                 Succeeded = false,
-                Error = $"Kunde inte spara till fil: {ex.Message}"
+                ErrorMessage = $"Kunde inte spara till fil: {ex.Message}"
             };
         }
     }
