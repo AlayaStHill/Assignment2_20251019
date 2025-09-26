@@ -15,3 +15,7 @@ Du måste använda dig av Git/GitHub och använda dig av olika branches när du skap
 
 FRÅGOR:------------------------------------
 varför registrerar man inte jsonserializer i DI-containern
+
+
+BRANCH FileRepository:
+products.json-file created
