@@ -28,7 +28,43 @@ public class ProductService : IProductService
 
     public async Task<ProductServiceResult<IEnumerable<Product>>> GetProductsAsync()
     {
-        throw new NotImplementedException();
+        try
+        {
+            _cts = new CancellationTokenSource();
+
+            FileRepositoryResult<IEnumerable<Product>> repoReadResult = await _fileRepository.ReadAsync(_cts.Token); 
+            if (!repoReadResult.Succeeded)
+            {
+                return new ProductServiceResult<IEnumerable<Product>>
+                {
+                    Succeeded = false,
+                    ErrorMessage = repoReadResult.ErrorMessage ?? "Okänt fel vid filhämtning",
+                    Data = []
+                };
+            }
+
+            return new ProductServiceResult<IEnumerable<Product>>
+            {
+                Succeeded = true,
+                Data = [.. repoReadResult.Data!] // // spreadoperator, tar den nya listan och sprider det i den nya. Istället för att loopa igenom med foreach tar den hela listan på en gång
+            }; 
+        }
+        catch (Exception ex)
+        {
+            _cts.Cancel();
+            _products = [];
+            return new ProductServiceResult<IEnumerable<Product>>
+            {
+                Succeeded = false,
+                ErrorMessage = $"Fel vid filhämtning: {ex.Message}",
+                Data = []
+            };
+        }
+        finally
+        {
+            _cts.Dispose(); 
+        }
+
     }
 
     public async Task<ProductServiceResult<Product>> SaveProductAsync(Product product) // MÅSTE FÅNGA UPP DATA = NULL I MAINWINDOW.XAML.CS

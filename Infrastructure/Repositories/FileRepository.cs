@@ -44,7 +44,7 @@ public class FileRepository : IFileRepository
         }
 
         string json = await File.ReadAllTextAsync(_filePath, cancellationToken);
-        // Kan innehålla text som inte kan omformatteras till json, då blir det false. Fångas upp i try eftersom det inte går att serializera.
+        // Om det är giltig text klarar denna koll, men inte giltig json att deserialisera fångas upp i catch
         if (string.IsNullOrWhiteSpace(json)) 
         {
             return new FileRepositoryResult<IEnumerable<Product>>
