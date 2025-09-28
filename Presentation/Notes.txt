@@ -12,9 +12,13 @@ Produktinformationen ska sparas ner till en .json-fil och ska även kunna hämtas 
 Du måste göra enhetstester/integrationstester för samtlig funktionalitet såsom att lägga till, visa, uppdatera, ta bort, läsa in lista, spara lista.
 Du måste använda dig av Git/GitHub och använda dig av olika branches när du skapar din funktionalitet. Dina branches i GitHub får inte tas bort utan ska finnas kvar. Men den slutgiltiga inlämningen ska vara main/master-branchen.
 
+---------------------------------------------------------------------------------
+* View (XAML + code-behind): ska bara hantera utseende och användarinteraktion (knappar, menyer, UI-element).
+	Databindning
+* ViewModel: ska innehålla logiken (vad som händer när man klickar, laddar data, byter vy).
 
-FRÅGOR:------------------------------------
-varför registrerar man inte jsonserializer i DI-containern
+Element (också kallat kontroll): window, grid, button, slider, textbox etc.
+På Window-elementet finns olika attribut: title, xmlns, x:Class, source (src)
 
 public async Task<ProductServiceResult<Product>> SaveProductAsync(Product product) // MÅSTE FÅNGA UPP DATA = NULL I MAINWINDOW.XAML.CS
 
