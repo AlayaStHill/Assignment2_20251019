@@ -1,8 +1,0 @@
-﻿using Infrastructure.Models;
-
-namespace Infrastructure.Interfaces;
-public interface IManufacturerRepository : IRepository<Manufacturer>
-{
-    // Metoder som är specifika för Manufacturer
-
-}

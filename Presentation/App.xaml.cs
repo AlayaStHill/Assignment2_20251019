@@ -1,6 +1,7 @@
-﻿using Infrastructure.Interfaces;
+﻿using Application.Services;
+using Domain.Interfaces;
+using Infrastructure.Interfaces;
 using Infrastructure.Repositories;
-using Infrastructure.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Windows;

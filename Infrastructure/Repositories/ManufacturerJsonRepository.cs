@@ -1,6 +1,6 @@
-﻿using Infrastructure.Interfaces;
-using Infrastructure.Models;
-using Infrastructure.Results;
+﻿using Domain.Entities;
+using Domain.Interfaces;
+using Domain.Results;
 using System.Text.Json;
 
 namespace Infrastructure.Repositories;

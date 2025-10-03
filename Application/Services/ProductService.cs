@@ -3,6 +3,7 @@ using Domain.Entities;
 using Application.Results;
 using Domain.Results;
 using Application.DTOs;
+using Infrastructure.Interfaces;
 
 namespace Application.Services;
 public class ProductService(IProductRepository productRepository, ICategoryRepository categoryRepository, IManufacturerRepository manufacturerRepository) : IProductService

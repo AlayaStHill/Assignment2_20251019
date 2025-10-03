@@ -1,6 +1,4 @@
-﻿using Infrastructure.Results;
-
-namespace Infrastructure.Helpers;
+﻿namespace Infrastructure.Helpers;
 
 public static class RepositoryExtensions
 {

@@ -35,8 +35,10 @@ Updated RepositoryResult with statuscodes.
 Added extension-class RepositoryExtensions with method GetOrCreateAsync
 
 Branchen: 
-Restructuring after lesson 20251002: 
-Refactoring? DDD-structure
+Lesson 20251002: 
+Remove: duplicate classes
+
+
 GetOrCreateAsync-method completed...
 
 Added: NavigationService
