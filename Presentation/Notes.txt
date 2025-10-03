@@ -36,7 +36,7 @@ Added extension-class RepositoryExtensions with method GetOrCreateAsync
 
 Branchen: 
 Lesson 20251002: 
-Remove: duplicate classes
+Refactor: rename Class Library Application to Assignment2.Application
 
 
 GetOrCreateAsync-method completed...

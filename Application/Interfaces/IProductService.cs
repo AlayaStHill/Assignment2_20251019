@@ -1,8 +1,8 @@
-﻿using Application.DTOs;
-using Application.Results;
+﻿using ApplicationLayer.DTOs;
+using ApplicationLayer.Results;
 using Domain.Entities;
 
-namespace Infrastructure.Interfaces;
+namespace ApplicationLayer.Interfaces;
 public interface IProductService // lägg in cancellationToken
 {
     void Cancel();

@@ -1,4 +1,4 @@
-﻿namespace Application.Results;
+﻿namespace ApplicationLayer.Results;
 // beskriver affärslogiska operationer (kunde systemet uppfylla användarens begäran) - Application
 public class ServiceResult 
 {

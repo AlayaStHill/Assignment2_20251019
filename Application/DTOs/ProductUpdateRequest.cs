@@ -1,4 +1,4 @@
-﻿namespace Application.DTOs;
+﻿namespace ApplicationLayer.DTOs;
 // Data Transfer Object (DTO). Används bara för att flytta data mellan lager (UI -> ProductService). Id = en pekare till en befintlig Product-entitey.
 public class ProductUpdateRequest
 {

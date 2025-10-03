@@ -1,6 +1,6 @@
-﻿using Application.Services;
+﻿using ApplicationLayer.Interfaces;
+using ApplicationLayer.Services;
 using Domain.Interfaces;
-using Infrastructure.Interfaces;
 using Infrastructure.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

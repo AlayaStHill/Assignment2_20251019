@@ -1,11 +1,11 @@
 ﻿using Domain.Interfaces;
 using Domain.Entities;
-using Application.Results;
+using ApplicationLayer.Results;
 using Domain.Results;
-using Application.DTOs;
-using Infrastructure.Interfaces;
+using ApplicationLayer.DTOs;
+using ApplicationLayer.Interfaces;
 
-namespace Application.Services;
+namespace ApplicationLayer.Services;
 public class ProductService(IProductRepository productRepository, ICategoryRepository categoryRepository, IManufacturerRepository manufacturerRepository) : IProductService
 {
     // fältets namn ska reflektera interfacet (vad det gör), inte implementationen (hur det görs)
