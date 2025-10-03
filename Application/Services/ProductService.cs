@@ -1,8 +1,10 @@
-﻿using Infrastructure.Interfaces;
-using Infrastructure.Models;
-using Infrastructure.Results;
+﻿using Domain.Interfaces;
+using Domain.Entities;
+using Application.Results;
+using Domain.Results;
+using Application.DTOs;
 
-namespace Infrastructure.Services;
+namespace Application.Services;
 public class ProductService(IProductRepository productRepository, ICategoryRepository categoryRepository, IManufacturerRepository manufacturerRepository) : IProductService
 {
     // fältets namn ska reflektera interfacet (vad det gör), inte implementationen (hur det görs)
@@ -33,11 +35,11 @@ public class ProductService(IProductRepository productRepository, ICategoryRepos
     }
 
 
-    public async Task<ProductServiceResult> EnsureLoadedAsync() 
+    public async Task<ServiceResult> EnsureLoadedAsync() 
     {
         // Listan är redan laddad
         if (_isLoaded)
-            return new ProductServiceResult { Succeeded = true, StatusCode = 200 };
+            return new ServiceResult { Succeeded = true, StatusCode = 200 };
 
         // Säkerställer att _cts inte är null vid anropning av ReadAsync eftersom EnsureLoaded är publik. Om _cts är null -> skapa en ny
         _cts ??= new CancellationTokenSource();  
@@ -46,7 +48,7 @@ public class ProductService(IProductRepository productRepository, ICategoryRepos
 
         if (!loadResult.Succeeded)
         {
-            return new ProductServiceResult
+            return new ServiceResult
             {
                 Succeeded = false,
                 // INTERNALSERVER ERROR
@@ -60,27 +62,27 @@ public class ProductService(IProductRepository productRepository, ICategoryRepos
         _isLoaded = true;
         
         // Listan var inte laddad från början, ReadAsync kördes och det lyckades.
-        return new ProductServiceResult { Succeeded = true };
+        return new ServiceResult { Succeeded = true };
     }
 
 
 
     // UI tar emot Button_click med delete UI. ProductService.DeleteProductAsync anropas med id som inparameter. 
-    public async Task<ProductServiceResult> DeleteProductAsync(string id)
+    public async Task<ServiceResult> DeleteProductAsync(string id)
     {
         try
         {
             _cts = new CancellationTokenSource();
 
-            ProductServiceResult ensureResult = await EnsureLoadedAsync();
+            ServiceResult ensureResult = await EnsureLoadedAsync();
             if (!ensureResult.Succeeded)
-                return new ProductServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = ensureResult.ErrorMessage };
+                return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = ensureResult.ErrorMessage };
 
             Product? productToDelete = _products.FirstOrDefault(product => product.ProductId == id);
 
             if (productToDelete == null)
             {
-                return new ProductServiceResult
+                return new ServiceResult
                 {
                     Succeeded = false,
                     // NOT FOUND
@@ -96,7 +98,7 @@ public class ProductService(IProductRepository productRepository, ICategoryRepos
 
             if (!repoSaveResult.Succeeded)
             {
-                return new ProductServiceResult
+                return new ServiceResult
                 {
                     Succeeded = false,
                     StatusCode = 500,
@@ -104,7 +106,7 @@ public class ProductService(IProductRepository productRepository, ICategoryRepos
                 };
             }
 
-            return new ProductServiceResult
+            return new ServiceResult
             {
                 Succeeded = true,
                 // OK, NO CONTENT
@@ -114,7 +116,7 @@ public class ProductService(IProductRepository productRepository, ICategoryRepos
         catch (Exception ex)
         {
             Cancel();
-            return new ProductServiceResult
+            return new ServiceResult
             {
                 Succeeded = false,
                 StatusCode = 500,
@@ -128,17 +130,17 @@ public class ProductService(IProductRepository productRepository, ICategoryRepos
     }
 
 
-    public async Task<ProductServiceResult<IEnumerable<Product>>> GetProductsAsync()
+    public async Task<ServiceResult<IEnumerable<Product>>> GetProductsAsync()
     {
         try
         {
             _cts = new CancellationTokenSource();
 
-            ProductServiceResult ensureResult = await EnsureLoadedAsync();
+            ServiceResult ensureResult = await EnsureLoadedAsync();
             if (!ensureResult.Succeeded)
-                return new ProductServiceResult<IEnumerable<Product>> { Succeeded = false, StatusCode = 500, ErrorMessage = ensureResult.ErrorMessage, Data = [] };
+                return new ServiceResult<IEnumerable<Product>> { Succeeded = false, StatusCode = 500, ErrorMessage = ensureResult.ErrorMessage, Data = [] };
 
-            return new ProductServiceResult<IEnumerable<Product>>
+            return new ServiceResult<IEnumerable<Product>>
             {
                 Succeeded = true,
                 // spreadoperator, tar den nya listan och sprider det i den nya. Istället för att loopa igenom med foreach tar den hela listan på en gång
@@ -150,7 +152,7 @@ public class ProductService(IProductRepository productRepository, ICategoryRepos
         {
             Cancel();
             _products = [];
-            return new ProductServiceResult<IEnumerable<Product>>
+            return new ServiceResult<IEnumerable<Product>>
             {
                 Succeeded = false,
                 StatusCode = 500,
@@ -165,7 +167,7 @@ public class ProductService(IProductRepository productRepository, ICategoryRepos
 
     }
 
-    public async Task<ProductServiceResult<Product>> SaveProductAsync(Product product) // MÅSTE FÅNGA UPP DATA = NULL I MAINWINDOW.XAML.CS
+    public async Task<ServiceResult<Product>> SaveProductAsync(Product product) // MÅSTE FÅNGA UPP DATA = NULL I MAINWINDOW.XAML.CS
     {
         try
         {
@@ -173,9 +175,9 @@ public class ProductService(IProductRepository productRepository, ICategoryRepos
             // Skapar en ny instans för att säkerställa en ny nollställd _cts utan pågående cancellation. 
             _cts = new CancellationTokenSource();
 
-            ProductServiceResult ensureResult = await EnsureLoadedAsync();
+            ServiceResult ensureResult = await EnsureLoadedAsync();
             if (!ensureResult.Succeeded)
-                return new ProductServiceResult<Product> { Succeeded = false, StatusCode = 500, ErrorMessage = ensureResult.ErrorMessage, Data = null };
+                return new ServiceResult<Product> { Succeeded = false, StatusCode = 500, ErrorMessage = ensureResult.ErrorMessage, Data = null };
 
 
 
@@ -188,7 +190,7 @@ public class ProductService(IProductRepository productRepository, ICategoryRepos
 
             await _productRepository.WriteAsync(_products, _cts.Token);
 
-            return new ProductServiceResult<Product>
+            return new ServiceResult<Product>
             {
                 Succeeded = true,
                 StatusCode = 201,
@@ -199,7 +201,7 @@ public class ProductService(IProductRepository productRepository, ICategoryRepos
         {
             Cancel();
 
-            return new ProductServiceResult<Product>
+            return new ServiceResult<Product>
             {
                 Succeeded = false,
                 StatusCode = 500,
@@ -215,20 +217,20 @@ public class ProductService(IProductRepository productRepository, ICategoryRepos
         }
     }
 
-    public async Task<ProductServiceResult> UpdateProductAsync(ProductUpdateRequest productUpdateRequest) // HUR MATA IN CATEGORY OCH MANUFACTURER!!!
+    public async Task<ServiceResult> UpdateProductAsync(ProductUpdateRequest productUpdateRequest) // HUR MATA IN CATEGORY OCH MANUFACTURER!!!
     {
         try
         {
             _cts = new CancellationTokenSource();
 
-            ProductServiceResult ensureResult = await EnsureLoadedAsync();
+            ServiceResult ensureResult = await EnsureLoadedAsync();
             if (!ensureResult.Succeeded)
-                return new ProductServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = ensureResult.ErrorMessage };
+                return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = ensureResult.ErrorMessage };
 
             Product? existingProduct = _products.FirstOrDefault(product => product.ProductId == productUpdateRequest.Id);
             if (existingProduct == null)
             {
-                return new ProductServiceResult
+                return new ServiceResult
                 {
                     Succeeded = false,
                     StatusCode = 404,
@@ -250,7 +252,7 @@ public class ProductService(IProductRepository productRepository, ICategoryRepos
             RepositoryResult repoSaveResult = await _productRepository.WriteAsync(_products, _cts.Token);
             if (!repoSaveResult.Succeeded)
             {
-                return new ProductServiceResult
+                return new ServiceResult
                 {
                     Succeeded = false,
                     StatusCode = 500,
@@ -258,7 +260,7 @@ public class ProductService(IProductRepository productRepository, ICategoryRepos
                 };
             }
 
-            return new ProductServiceResult
+            return new ServiceResult
             {
                 Succeeded = true,
                 StatusCode = 204,
@@ -267,7 +269,7 @@ public class ProductService(IProductRepository productRepository, ICategoryRepos
         catch (Exception ex)
         {
             Cancel();
-            return new ProductServiceResult
+            return new ServiceResult
             {
                 Succeeded = false,
                 StatusCode = 500,

@@ -1,4 +1,4 @@
-﻿using Infrastructure.Models;
+﻿using Infrastructure.Results;
 
 namespace Infrastructure.Interfaces;
 // Istället för att duplicera ReadAsync, WriteAsync i tre olika interfaces (DRY).

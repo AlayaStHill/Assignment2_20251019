@@ -1,6 +1,6 @@
-﻿using Infrastructure.Models;
+﻿using Domain.Entities;
 
-namespace Infrastructure.Interfaces;
+namespace Domain.Interfaces;
 public interface IManufacturerRepository : IRepository<Manufacturer>
 {
     // Metoder som är specifika för Manufacturer

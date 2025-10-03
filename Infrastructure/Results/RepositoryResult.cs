@@ -1,5 +1,5 @@
-﻿namespace Infrastructure.Models;
-
+﻿namespace Infrastructure.Results;
+// beskriver tekniska operationer (mekaniken runtomkring affärslogiken - hur data transporteras eller lagras) - Infrastructure
 public class RepositoryResult
 {
     public bool Succeeded { get; set; }

@@ -23,7 +23,7 @@ På Window-elementet finns olika attribut: title, xmlns, x:Class, source (src)
 public async Task<ProductServiceResult<Product>> SaveProductAsync(Product product) // MÅSTE FÅNGA UPP DATA = NULL I MAINWINDOW.XAML.CS
 
 
-Branchen:
+Branchen: COMMITAT
 Added INavigationService 
 Restructuring after lesson 20250929: 
 Added ProductRequest-, ProductUpdateRequest-class. 
@@ -34,6 +34,12 @@ Added EnsureLoadedAsync-method to ProductService.
 Updated RepositoryResult with statuscodes.
 Added extension-class RepositoryExtensions with method GetOrCreateAsync
 
+Branchen: 
+Restructuring after lesson 20251002: 
+Refactoring? DDD-structure
+GetOrCreateAsync-method completed...
+
+Added: NavigationService
 
 
 
@@ -60,7 +66,8 @@ Enhetstester xUnit
 
 
 
-
+NÄR DU SÄTTER DIG IGEN:
+vart placera med interfacet INavigationService. Hur ändra namespace för flyttade filer
 
 
 
@@ -73,3 +80,15 @@ Helper = anses kunna användas i projektet i stort.
 Vid anrop måste man skicka in objektet som inparameter - RepositoryHelpers.GetOrCreateAsync(_categoryRepository), till en fristående metod.
 
 
+DDD (Domain-Driven Design)
+--------------------------
+Domänen:      Produkthantering (området programmet handlar om)
+Entities:     Product, Category, Manufacturer. Även kallat domänens kärnmodeller. Har alltid en unik Id-property, vilket är det som gör dem till entities.
+DTOs:         ProductUpdateRequest, ProductRequest (Data Transfer Object - används bara för att flytta data mellan lager, ex. UI -> ProductService)
+Repositories: ProductRepository, CategoryRepository, ManufacturerRepository
+Service:      ProductService (samordnar logiken)
+
+Domain =		 Entities och Interfaces (vad systemet är). Kataloger: Project Reference: None
+Application =	 Use cases och affärslogik (vad systemet gör). Project Reference: Domain
+Infrastructure = Repositories och teknik (hur systemet lagrar data). Project Reference: Domain
+Presentation =	 UI/MVVM (hur användaren interagerar). Project Reference: Domain
