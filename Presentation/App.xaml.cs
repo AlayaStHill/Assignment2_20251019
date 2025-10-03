@@ -16,8 +16,11 @@ namespace Presentation
             _host = Host.CreateDefaultBuilder()
                 .ConfigureServices(services =>
                 {
-                    services.AddSingleton<IFileRepository, FileRepository>();
+                    services.AddSingleton<IProductRepository, ProductJsonRepository>();
                     services.AddSingleton<IProductService, ProductService>();
+
+                    services.AddSingleton<IManufacturerRepository, ManufacturerJsonRepository>();
+                    services.AddSingleton<ICategoryRepository, CategoryJsonRepository>();
                 })
                 .Build();
 

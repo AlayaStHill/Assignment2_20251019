@@ -1,40 +1,69 @@
 ﻿using Infrastructure.Interfaces;
 using Infrastructure.Models;
+using System.Net;
 
 namespace Infrastructure.Services;
-// Registrera i App.xaml
-public class ProductService : IProductService
+public class ProductService(IProductRepository productRepository, ICategoryRepository categoryRepository, IManufacturerRepository manufacturerRepository) : IProductService
 {
-    private readonly IFileRepository _fileRepository;
-    // initieras automatiskt till null (standardvärde för referenstyper)
-    private List<Product> _products;
+    // fältets namn ska reflektera interfacet (vad det gör), inte implementationen (hur det görs)
+    private readonly IProductRepository _productRepository = productRepository;
+    private readonly ICategoryRepository _categoryRepository = categoryRepository;
+    private readonly IManufacturerRepository _manufacturerRepository = manufacturerRepository;
+    private List<Product> _products = [];
     // gäller för hela klassen - pekar alltid på den senaste instansen som newats i metoderna. När Cancel anropas stoppas just den instansen..Token tar emot stoppsignalen och vidarebefodrar den till koden som använden den. 
-    private CancellationTokenSource _cts = null!; 
-
-    public ProductService(IFileRepository fileRepository) 
-    {
-        _fileRepository = fileRepository;
-        // instansierar en ny tom lista och tilldelar fältet sitt första användbara värde. Fördel: lätt att ändra logik senare, t.ex. populera listan med innehåll från fil direkt när ProductService skapas (det är bara i konstruktorn man har tillgång till inparametrar som FileRepository ex., direkt vid uppstart)
-        _products = []; 
-    }
+    private CancellationTokenSource _cts = null!;
+    private bool _isLoaded;
 
     // Cancel-button aktiveras bara när "nedladdning" pågår, men ändå säkra upp för att skydda mot ett scenario där Cancel anropas då _cts är disposed eller fortfarande null innan någon metod körs
     public void Cancel()
     {
         // efter Cancel() anropats är IsCancellationRequested == true
-        if (_cts != null && !_cts.IsCancellationRequested) 
+        if (_cts != null && !_cts.IsCancellationRequested)
         {
             try
             {
                 _cts.Cancel();
             }
             // kastas om _cts är disposad då Cancel() anropas
-            catch (ObjectDisposedException) 
+            catch (ObjectDisposedException)
             {
                 // neutraliserat undantag, programmet kraschar ej och kan köra vidare om en ny metod anropas
             }
         }
     }
+
+
+    public async Task<ProductServiceResult> EnsureLoadedAsync() 
+    {
+        // Listan är redan laddad
+        if (_isLoaded)
+            return new ProductServiceResult { Succeeded = true, StatusCode = 200 };
+
+        // Säkerställer att _cts inte är null vid anropning av ReadAsync eftersom EnsureLoaded är publik. Om _cts är null -> skapa en ny
+        _cts ??= new CancellationTokenSource();  
+
+        RepositoryResult<IEnumerable<Product>>? loadResult = await _productRepository.ReadAsync(_cts.Token);
+
+        if (!loadResult.Succeeded)
+        {
+            return new ProductServiceResult
+            {
+                Succeeded = false,
+                // INTERNALSERVER ERROR
+                StatusCode = 500,
+                ErrorMessage = loadResult.ErrorMessage ?? "Ett okänt fel inträffade vid filhämtning"
+            };
+            
+        }
+           
+        _products = [.. (loadResult.Data ?? [])];
+        _isLoaded = true;
+        
+        // Listan var inte laddad från början, ReadAsync kördes och det lyckades.
+        return new ProductServiceResult { Succeeded = true };
+    }
+
+
 
     // UI tar emot Button_click med delete UI. ProductService.DeleteProductAsync anropas med id som inparameter. 
     public async Task<ProductServiceResult> DeleteProductAsync(string id)
@@ -43,25 +72,19 @@ public class ProductService : IProductService
         {
             _cts = new CancellationTokenSource();
 
-            FileRepositoryResult<IEnumerable<Product>> repoReadResult = await _fileRepository.ReadAsync(_cts.Token);
-            if (!repoReadResult.Succeeded)
-            {
-                return new ProductServiceResult
-                {
-                    Succeeded = false,
-                    ErrorMessage = repoReadResult.ErrorMessage ?? "Ett okänt fel inträffade vid filhämtning"
-                };
-            }
-            // FileRepository returnerar products eller [] om Succeeded = true och [] om false, så Data blir inte null här. ?? [] mest säker kod
-            _products = repoReadResult.Data?.ToList() ?? [];
+            ProductServiceResult ensureResult = await EnsureLoadedAsync();
+            if (!ensureResult.Succeeded)
+                return new ProductServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = ensureResult.ErrorMessage };
 
-            Product? productToDelete = _products.FirstOrDefault(product => product.Id == id);
+            Product? productToDelete = _products.FirstOrDefault(product => product.ProductId == id);
 
             if (productToDelete == null)
             {
                 return new ProductServiceResult
                 {
                     Succeeded = false,
+                    // NOT FOUND
+                    StatusCode = 404,
                     ErrorMessage = $"Produkten med Id {id} kunde inte hittas"
                 };
             }
@@ -69,20 +92,23 @@ public class ProductService : IProductService
             _products.Remove(productToDelete);
 
             // Spara till fil, annars uppdateras inte listan och ändringen ligger bara i minnet och försvinner när programmet stängs.
-            FileRepositoryResult repoSaveResult = await _fileRepository.WriteAsync(_products, _cts.Token);
+            RepositoryResult repoSaveResult = await _productRepository.WriteAsync(_products, _cts.Token);
 
             if (!repoSaveResult.Succeeded)
             {
                 return new ProductServiceResult
                 {
                     Succeeded = false,
+                    StatusCode = 500,
                     ErrorMessage = repoSaveResult.ErrorMessage ?? "Ett okänt fel inträffade vid filsparning"
                 };
             }
 
             return new ProductServiceResult
             {
-                Succeeded = true
+                Succeeded = true,
+                // OK, NO CONTENT
+                StatusCode = 204
             };
         }
         catch (Exception ex)
@@ -91,6 +117,7 @@ public class ProductService : IProductService
             return new ProductServiceResult
             {
                 Succeeded = false,
+                StatusCode = 500,
                 ErrorMessage = $"Det gick inte att ta bort produkten: {ex.Message}"
             };
         }
@@ -107,22 +134,16 @@ public class ProductService : IProductService
         {
             _cts = new CancellationTokenSource();
 
-            FileRepositoryResult<IEnumerable<Product>> repoReadResult = await _fileRepository.ReadAsync(_cts.Token); 
-            if (!repoReadResult.Succeeded)
-            {
-                return new ProductServiceResult<IEnumerable<Product>>
-                {
-                    Succeeded = false,
-                    ErrorMessage = repoReadResult.ErrorMessage ?? "Okänt fel vid filhämtning",
-                    Data = []
-                };
-            }
+            ProductServiceResult ensureResult = await EnsureLoadedAsync();
+            if (!ensureResult.Succeeded)
+                return new ProductServiceResult<IEnumerable<Product>> { Succeeded = false, StatusCode = 500, ErrorMessage = ensureResult.ErrorMessage, Data = [] };
 
             return new ProductServiceResult<IEnumerable<Product>>
             {
                 Succeeded = true,
                 // spreadoperator, tar den nya listan och sprider det i den nya. Istället för att loopa igenom med foreach tar den hela listan på en gång
-                Data = [.. repoReadResult.Data!] 
+                StatusCode = 200,
+                Data = [.. _products] 
             }; 
         }
         catch (Exception ex)
@@ -132,6 +153,7 @@ public class ProductService : IProductService
             return new ProductServiceResult<IEnumerable<Product>>
             {
                 Succeeded = false,
+                StatusCode = 500,
                 ErrorMessage = $"Fel vid filhämtning: {ex.Message}",
                 Data = []
             };
@@ -149,15 +171,27 @@ public class ProductService : IProductService
         {
             // Typen är redan specificerad i fältet. Här kommer en ny tilldelning bara. Deklarerar jag typen frånkopplar jag den från fältet och skapar en ny lokal variabel.
             // Skapar en ny instans för att säkerställa en ny nollställd _cts utan pågående cancellation. 
-            _cts = new CancellationTokenSource(); 
-            product.Id = Guid.NewGuid().ToString();
+            _cts = new CancellationTokenSource();
+
+            ProductServiceResult ensureResult = await EnsureLoadedAsync();
+            if (!ensureResult.Succeeded)
+                return new ProductServiceResult<Product> { Succeeded = false, StatusCode = 500, ErrorMessage = ensureResult.ErrorMessage, Data = null };
+
+
+
+
+
+
+
+            product.ProductId = Guid.NewGuid().ToString();
             _products.Add(product);
 
-            await _fileRepository.WriteAsync(_products, _cts.Token);
+            await _productRepository.WriteAsync(_products, _cts.Token);
 
             return new ProductServiceResult<Product>
             {
                 Succeeded = true,
+                StatusCode = 201,
                 Data = product
             };
         }
@@ -168,6 +202,7 @@ public class ProductService : IProductService
             return new ProductServiceResult<Product>
             {
                 Succeeded = false,
+                StatusCode = 500,
                 ErrorMessage = $"Det gick inte att spara produkten: {ex.Message}",
                 Data = null // MÅSTE FÅNGA UPP DATA = NULL I MAINWINDOW.XAML.CS
             };
@@ -180,51 +215,53 @@ public class ProductService : IProductService
         }
     }
 
-    public async Task<ProductServiceResult> UpdateProductAsync(Product updatedProduct)
+    public async Task<ProductServiceResult> UpdateProductAsync(ProductUpdateRequest productUpdateRequest) // HUR MATA IN CATEGORY OCH MANUFACTURER!!!
     {
         try
         {
             _cts = new CancellationTokenSource();
 
-            FileRepositoryResult<IEnumerable<Product>> repoReadResult = await _fileRepository.ReadAsync(_cts.Token);
-            if (!repoReadResult.Succeeded)
-            {
-                return new ProductServiceResult
-                {
-                    Succeeded = false,
-                    ErrorMessage = repoReadResult.ErrorMessage ?? "Ett okänt fel inträffade vid filhämtning"
-                };
+            ProductServiceResult ensureResult = await EnsureLoadedAsync();
+            if (!ensureResult.Succeeded)
+                return new ProductServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = ensureResult.ErrorMessage };
 
-            }
-            // FileRepository returnerar products eller [] om Succeeded = true och [] om false, så Data blir inte null här. ?? [] mest säker kod
-            _products = repoReadResult.Data?.ToList() ?? [];
-
-            Product? existingProduct = _products.FirstOrDefault(product => product.Id == updatedProduct.Id);
+            Product? existingProduct = _products.FirstOrDefault(product => product.ProductId == productUpdateRequest.Id);
             if (existingProduct == null)
             {
                 return new ProductServiceResult
                 {
                     Succeeded = false,
-                    ErrorMessage = $"Produkten med Id {updatedProduct.Id} kunde inte hittas"
+                    StatusCode = 404,
+                    ErrorMessage = $"Produkten med Id {productUpdateRequest.Id} kunde inte hittas"
                 };
             }
+
+            Product updatedProduct = new()
+            {
+                ProductName = productUpdateRequest.Name,
+                Price = productUpdateRequest.Price,
+                Category = new Category { Name = productUpdateRequest.CategoryName }, // OBS
+                Manufacturer = new Manufacturer { Name = productUpdateRequest.ManufacturerName } // OBS
+            };
 
             _products.Remove(existingProduct);
             _products.Add(updatedProduct);
 
-            FileRepositoryResult repoSaveResult = await _fileRepository.WriteAsync(_products, _cts.Token);
+            RepositoryResult repoSaveResult = await _productRepository.WriteAsync(_products, _cts.Token);
             if (!repoSaveResult.Succeeded)
             {
                 return new ProductServiceResult
                 {
                     Succeeded = false,
+                    StatusCode = 500,
                     ErrorMessage = repoSaveResult.ErrorMessage ?? "Ett okänt fel inträffade vid filsparning"
                 };
             }
 
             return new ProductServiceResult
             {
-                Succeeded = true
+                Succeeded = true,
+                StatusCode = 204,
             };
         }
         catch (Exception ex)
@@ -233,6 +270,7 @@ public class ProductService : IProductService
             return new ProductServiceResult
             {
                 Succeeded = false,
+                StatusCode = 500,
                 ErrorMessage = $"Det gick inte att uppdatera produkten: {ex.Message}"
             };
         }
@@ -242,3 +280,13 @@ public class ProductService : IProductService
         }
     }
 }
+
+
+/* 
+sätta id tillverkare + kategori: var newCategory = new Category:
+
+{
+    Id = categories.Count == 0 ? 1 : categories.Max(c => c.Id) + 1,
+    Name = product.Category.Name
+};
+*/

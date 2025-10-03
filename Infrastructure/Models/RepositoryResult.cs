@@ -1,12 +1,13 @@
 ﻿namespace Infrastructure.Models;
 
-public class FileRepositoryResult
+public class RepositoryResult
 {
     public bool Succeeded { get; set; }
+    public int StatusCode { get; set; }
     public string? ErrorMessage { get; set; }
 }
 
-public class FileRepositoryResult<T> : FileRepositoryResult
+public class RepositoryResult<T> : RepositoryResult
 {
     public T? Data { get; set; }
 }

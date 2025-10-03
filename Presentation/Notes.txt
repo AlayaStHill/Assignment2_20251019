@@ -24,3 +24,52 @@ public async Task<ProductServiceResult<Product>> SaveProductAsync(Product produc
 
 
 Branchen:
+Added INavigationService 
+Restructuring after lesson 20250929: 
+Added ProductRequest-, ProductUpdateRequest-class. 
+Removed IFileRepository.
+Changed FileRepository to ProductJsonRepository and FileRepositoryResult to RepositoryResult.
+Added interface IRepository<T> and implementations: ManufacturerJsonRepository, CategoryJsonRepository. 
+Added EnsureLoadedAsync-method to ProductService. 
+Updated RepositoryResult with statuscodes.
+Added extension-class RepositoryExtensions with method GetOrCreateAsync
+
+
+
+
+
+
+utöka product med tillverkare och kategorier ska kunna anges vid uppdaterande av produkt
+
+
+Att göra:
+ + CategoryRepository
+IManufacturerRepository + ManufacturerRepository
+INavigationService + NavigationService
+
+--> MVVM
+
+Enhetstester xUnit 
+(integrationstest Repository??)
+
+
+??? Senare kan du alltid lägga till cache/minneslager, men just nu kommer det inte göra någon skillnad i din app – bara göra det svårare att förstå vad som händer.
+
+
+
+
+
+
+
+
+
+
+
+
+Extension = säger att den här klassen riktar in sig på och agerar hjälpare (ger extra funktionalitet) till en specifik typ av klass. 
+this = extension-klassen kan anropas direkt på alla objekt som implementerar IRepository<Category>, som om GetOrCreateAsync() var skapad inuti själva CategoryJsonRepository-klassen.
+
+Helper = anses kunna användas i projektet i stort.
+Vid anrop måste man skicka in objektet som inparameter - RepositoryHelpers.GetOrCreateAsync(_categoryRepository), till en fristående metod.
+
+
