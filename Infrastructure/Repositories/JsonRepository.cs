@@ -1,0 +1,79 @@
+﻿using Domain.Interfaces;
+using Domain.Results;
+using System.Text.Json;
+
+namespace Infrastructure.Repositories;
+
+public class JsonRepository<T> : IRepository<T> where T : class
+{
+    private readonly string _filePath;
+    private readonly string _dataDirectory;
+    private static JsonSerializerOptions _jsonOptions = new() { WriteIndented = true };
+
+    public JsonRepository(string dataDirectory, string fileName)
+    {
+        // Sätts från DI
+        _dataDirectory = dataDirectory;
+        // Kombinerar katalog + filnamn
+        _filePath = Path.Combine(dataDirectory, fileName);
+
+        // Ser till att katalog och fil finns. Ska finnas innan applikationen laddas, annars kan den krascha. Om tex kör writeasync först. DRY - istället för att lägga in samma sak i flera metoder
+        EnsureInitialized(_dataDirectory, _filePath);
+    }
+
+    public static void EnsureInitialized(string dataDirectory, string filePath)
+    {
+        if (!Directory.Exists(dataDirectory))
+        {
+            Directory.CreateDirectory(dataDirectory);
+        }
+        if (!File.Exists(filePath))
+        {
+            // Om inte filen products.json finns på den angivna filsökvägen, skapa den och skriv in en tom lista i json-format
+            File.WriteAllText(filePath, "[]");
+        }
+    }
+
+    // CancellationToken cancellationToken här är kopplad till CancellationTokenSourse i ProductService, varifrån dessa metoder kan avbrytas
+    public async Task<RepositoryResult<IEnumerable<T>>> ReadAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+
+            string json = await File.ReadAllTextAsync(_filePath, cancellationToken);
+            // Om det är giltig text klarar denna koll, men inte giltig json att deserialisera fångas upp i catch
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return RepositoryResult<IEnumerable<T>>.InternalServerError("Filen innehöll inget giltigt JSON-format.");
+            }
+
+
+            List<T>? entities = JsonSerializer.Deserialize<List<T>>(json, _jsonOptions);
+            return RepositoryResult<IEnumerable<T>>.OK(entities ?? []);
+
+        }
+        catch (JsonException ex)
+        {
+            // Om JSON är ogiltig, återställ filen till en giltig tom lista
+            await File.WriteAllTextAsync(_filePath, "[]", cancellationToken);
+
+            return RepositoryResult<IEnumerable<T>>.InternalServerError($"Ogiltig JSON: {ex.Message}");
+        }
+    }
+
+    public async Task<RepositoryResult> WriteAsync(IEnumerable<T> entities, CancellationToken cancellationToken)
+    {
+        try
+        {
+            string json = JsonSerializer.Serialize(entities, _jsonOptions);
+            await File.WriteAllTextAsync(_filePath, json, cancellationToken); // fungerar med små filer. Stream tar bara 100 första delar upp stora filen i olika portioner effektivare- för systemet lättare med flera småbitar, kan deka ut i processorn i flera olika trådar istället för en enda stor tråd.
+
+            return RepositoryResult.NoContent();
+
+        }
+        catch (Exception ex)
+        {
+            return RepositoryResult.InternalServerError($"Kunde inte spara till fil: {ex.Message}");
+        }
+    }
+}

@@ -23,4 +23,73 @@ På Window-elementet finns olika attribut: title, xmlns, x:Class, source (src)
 public async Task<ProductServiceResult<Product>> SaveProductAsync(Product product) // MÅSTE FÅNGA UPP DATA = NULL I MAINWINDOW.XAML.CS
 
 
-Branchen:
+---------------------------------------------------------------
+Branchen: 
+Refactor: repository restructuring and ProductService update 
+- Update UpdateProductAsync
+- Update: SaveProductsAsync
+- Remove RepositoryExtensions and ExistsAsync-method 
+- Remove GetEntityAsync from JsonRepository
+- Add GetOrCreateAsync to RepositoryExtensions
+
+
+----------------------------------------------------------------------
+refactor: repository restructuring and ProductService update
+
+- Remove GetOrCreateAsync from RepositoryExtensions
+- Remove ProductJsonRepository, CategoryJsonRepository, ManufacturerJsonRepository and corresponding interfaces
+- Add GetEntityAsync-method to JsonRepository
+- Add ExistsAsync-method to RepositoryExtensions
+- Add manufacturer.json and categories.json to Data folder
+- Rename ProductRequest to ProductCreateRequest
+- Update IRepository with GetEntityAsync and ExistsAsync
+- Update ProductService.UpdateProductAsync
+
+
+
+
+ATT GÖRA:
+--------------
+IViewNavigationService + ViewNavigationService
+lägga till i saveproduct så att man inte kan lägga till en produkt som redan finns. Case-sensitive??
+saveproducts 
+
+
+--> MVVM
+
+Enhetstester xUnit 
+(integrationstest Repository??)
+
+
+??? Senare kan du alltid lägga till cache/minneslager, men just nu kommer det inte göra någon skillnad i din app – bara göra det svårare att förstå vad som händer.
+********inte case-sensitive produkt, tillverkare, kategori så att inte två produkter kan läggast till med samma namn fast små eller stor bokstäver
+
+
+
+
+
+
+
+
+
+
+
+Extension = säger att den här klassen riktar in sig på och agerar hjälpare (ger extra funktionalitet) till en specifik typ av klass. 
+this = extension-klassen kan anropas direkt på alla objekt som implementerar IRepository<Category>, som om GetOrCreateAsync() var skapad inuti själva CategoryJsonRepository-klassen.
+
+Helper = anses kunna användas i projektet i stort.
+Vid anrop måste man skicka in objektet som inparameter - RepositoryHelpers.GetOrCreateAsync(_categoryRepository), till en fristående metod.
+
+
+DDD (Domain-Driven Design)
+--------------------------
+Domänen:      Produkthantering (området programmet handlar om)
+Entities:     Product, Category, Manufacturer. Även kallat domänens kärnmodeller. Har alltid en unik Id-property, vilket är det som gör dem till entities.
+DTOs:         ProductUpdateRequest, ProductRequest (Data Transfer Object - används bara för att flytta data mellan lager, ex. UI -> ProductService)
+Repositories: ProductRepository, CategoryRepository, ManufacturerRepository
+Service:      ProductService (samordnar logiken)
+
+Domain =		 Entities och Interfaces (vad systemet är). Kataloger: Project Reference: None
+Application =	 Use cases och affärslogik (vad systemet gör). Project Reference: Domain
+Infrastructure = Repositories och teknik (hur systemet lagrar data). Project Reference: Domain
+Presentation =	 UI/MVVM (hur användaren interagerar). Project Reference: Domain
