@@ -23,23 +23,17 @@ På Window-elementet finns olika attribut: title, xmlns, x:Class, source (src)
 public async Task<ProductServiceResult<Product>> SaveProductAsync(Product product) // MÅSTE FÅNGA UPP DATA = NULL I MAINWINDOW.XAML.CS
 
 
-
+---------------------------------------------------------------
 Branchen: 
-Refactor: rename Class Library Application to Assignment2.Application
-Refactor: rename INavigationService to IViewNavigationService and NavigationService to ViewNavigationService
+Refactor: repository restructuring and ProductService update 
+- Update UpdateProductAsync
+- Update: SaveProductsAsync
+- Remove RepositoryExtensions and ExistsAsync-method 
+- Remove GetEntityAsync from JsonRepository
+- Add GetOrCreateAsync to RepositoryExtensions
 
 
-Refactor: remove GetOrCreateAsync-method from RepositoryExtensions
-Refactor: remove ProductJsonRepository, CategoryJsonRepository, ManufacturerJsonRepository and corresponding interfaces
-Feat(repository): add GetEntityAsync-method to JsonRepository
-Feat: add ExistsAsync-method to RepositoryExtensions
-Chore: add manufacturer.json and categories.json to Data-catalog
-Refactor: rename ProductRequest to ProductCreateRequest
-Refactor: update IRepository with GetEntityAsync and ExistsAsync
-Refactor: update ProductService UpdateProductAsync 
-
-
-
+----------------------------------------------------------------------
 refactor: repository restructuring and ProductService update
 
 - Remove GetOrCreateAsync from RepositoryExtensions
@@ -56,13 +50,10 @@ refactor: repository restructuring and ProductService update
 
 ATT GÖRA:
 --------------
-GetOrCreateAsync
-ProductService med tillverkare och kategorier
 IViewNavigationService + ViewNavigationService
 lägga till i saveproduct så att man inte kan lägga till en produkt som redan finns. Case-sensitive??
-New sokution folder
 saveproducts 
-update
+
 
 --> MVVM
 

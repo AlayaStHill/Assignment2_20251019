@@ -4,9 +4,11 @@ using ApplicationLayer.Results;
 using Domain.Results;
 using ApplicationLayer.DTOs;
 using ApplicationLayer.Interfaces;
+using Domain.Helpers;
+using ApplicationLayer.Factories;
 
 namespace ApplicationLayer.Services;
-public class ProductService(IRepository<Product> productRepository, IRepository<Category> categoryRepository, IRepository<Manufacturer> manufacturerRepository, FilesInformation filesInfo) : IProductService
+public class ProductService(IRepository<Product> productRepository, IRepository<Category> categoryRepository, IRepository<Manufacturer> manufacturerRepository) : IProductService
 {
     // fältets namn ska reflektera interfacet (vad det gör), inte implementationen (hur det görs)
     private readonly IRepository<Product> _productRepository = productRepository;
@@ -79,7 +81,7 @@ public class ProductService(IRepository<Product> productRepository, IRepository<
             if (!ensureResult.Succeeded)
                 return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = ensureResult.ErrorMessage };
 
-            Product? productToDelete = _products.FirstOrDefault(product => product.ProductId == id);
+            Product? productToDelete = _products.FirstOrDefault(product => product.Id == id);
 
             if (productToDelete == null)
             {
@@ -110,7 +112,7 @@ public class ProductService(IRepository<Product> productRepository, IRepository<
             return new ServiceResult
             {
                 Succeeded = true,
-                // OK, NO CONTENT
+                // NO CONTENT
                 StatusCode = 204
             };
         }
@@ -170,8 +172,17 @@ public class ProductService(IRepository<Product> productRepository, IRepository<
 
     public async Task<ServiceResult<Product>> SaveProductAsync(ProductCreateRequest productCreateRequest) // MÅSTE FÅNGA UPP DATA = NULL I MAINWINDOW.XAML.CS
     {
+        if (string.IsNullOrWhiteSpace(productCreateRequest.Name) || productCreateRequest.Price >= 0)
+        {
+            return new ServiceResult<Product>
+            {
+                Succeeded = false,
+                // BAD REQUEST
+                StatusCode = 400,
+                ErrorMessage = "Produktfälten är inte korrekt ifyllda."
+            };
+        }
 
-        //INTE KUNNA SPARA PRODUKTER MED SAMMA NAMN
         try
         {
             // Typen är redan specificerad i fältet. Här kommer en ny tilldelning bara. Deklarerar jag typen frånkopplar jag den från fältet och skapar en ny lokal variabel.
@@ -182,14 +193,24 @@ public class ProductService(IRepository<Product> productRepository, IRepository<
             if (!ensureResult.Succeeded)
                 return new ServiceResult<Product> { Succeeded = false, StatusCode = 500, ErrorMessage = ensureResult.ErrorMessage, Data = null };
 
+            // Kontrollera om produkten redan finns
+            bool productExists = _products.Any(product => product.Name == productCreateRequest.Name);
 
-            //mappa om till product
+            if (productExists) 
+            {
+                return new ServiceResult<Product>
+                {
+                    Succeeded = false,
+                    // CONFLICT
+                    StatusCode = 409,
+                    ErrorMessage = $"En produkt med namnet {productCreateRequest.Name} finns redan i systemet.",
+                    Data = null
+                };
+            }
 
+            Product newProduct = ProductFactory.MapRequestToProduct(productCreateRequest);
 
-
-
-            productCreateRequest.Id = Guid.NewGuid().ToString();
-            _products.Add(product);
+            _products.Add(newProduct);
 
             await _productRepository.WriteAsync(_products, _cts.Token);
 
@@ -197,7 +218,7 @@ public class ProductService(IRepository<Product> productRepository, IRepository<
             {
                 Succeeded = true,
                 StatusCode = 201,
-                Data = product
+                Data = newProduct   
             };
         }
         catch (Exception ex)
@@ -241,48 +262,52 @@ public class ProductService(IRepository<Product> productRepository, IRepository<
                 };
             }
 
-            RepositoryResult<bool> categoryExistsResult = await _categoryRepository.ExistsAsync(category => category.Name == productUpdateRequest.Name, _cts.Token);
-            if (!categoryExistsResult.Succeeded)
+            // Uppdatera produkten
+            existingProduct.Name = productUpdateRequest.Name;
+            existingProduct.Price = productUpdateRequest.Price;
+
+            // Hämta eller skapa en kategori enbart om CategoryName inskickat
+            if (!string.IsNullOrWhiteSpace(productUpdateRequest.CategoryName))
             {
-                return new ServiceResult
+                RepositoryResult<Category> categoryResult = await _categoryRepository.GetOrCreateAsync(category => category.Name == productUpdateRequest.CategoryName,
+                    () => new Category { Id = Guid.NewGuid().ToString(), Name = productUpdateRequest.CategoryName }, _cts.Token);
+                if (!categoryResult.Succeeded || categoryResult.Data == null)
                 {
-                    Succeeded = false,
-                    StatusCode = 500,
-                    ErrorMessage = categoryExistsResult.ErrorMessage ?? $"Det gick inte att kontrollera om kategorin {productUpdateRequest.Name} finns i systemet."
-                };
+                    return new ServiceResult
+                    {
+                        Succeeded = false,
+                        StatusCode = 500,
+                        ErrorMessage = categoryResult.ErrorMessage ?? "Kunde inte hämta eller skapa kategori."
+                    };
+                }
+                existingProduct.Category = categoryResult.Data;
             }
 
-                RepositoryResult<bool> manufacturerExistsResult = await _manufacturerRepository.ExistsAsync(manufacturer => manufacturer.Name == productUpdateRequest.Name, _cts.Token);
-            if (!manufacturerExistsResult.Succeeded)
+            // Hämta eller skapa tillverkare enbart om ManufacturerName inskickat
+            if (!string.IsNullOrWhiteSpace(productUpdateRequest.ManufacturerName))
             {
-                return new ServiceResult
+                RepositoryResult<Manufacturer> manufacturerResult = await _manufacturerRepository.GetOrCreateAsync(manufacturer => manufacturer.Name == productUpdateRequest.ManufacturerName,
+                    () => new Manufacturer { Id = Guid.NewGuid().ToString(), Name = productUpdateRequest.ManufacturerName }, _cts.Token);
+                if (!manufacturerResult.Succeeded || manufacturerResult.Data == null)
                 {
-                    Succeeded = false,
-                    StatusCode = 500,
-                    ErrorMessage = manufacturerExistsResult.ErrorMessage ?? $"Det gick inte att kontrollera om tillverkaren {productUpdateRequest.Name} finns i systemet."
-                };
+                    return new ServiceResult
+                    {
+                        Succeeded = false,
+                        StatusCode = 500,
+                        ErrorMessage = manufacturerResult.ErrorMessage ?? "Kunde inte hämta eller skapa tillverkare."
+                    };
+                }
+                existingProduct.Manufacturer = manufacturerResult.Data;
             }
 
-
-            Product updatedProduct = new()
-            {
-                Name = productUpdateRequest.Name,
-                Price = productUpdateRequest.Price,
-                Category = categoryExistsResult.Data ? (await _categoryRepository.GetEntityAsync(category => category.Name == productUpdateRequest.Name, _cts.Token)).Data! : new Category { Name = productUpdateRequest.Name, Id = Guid.NewGuid().ToString() },
-                Manufacturer = categoryExistsResult.Data ? (await _manufacturerRepository.GetEntityAsync(manufacturer => manufacturer.Name == productUpdateRequest.Name, _cts.Token)).Data! : new Manufacturer { Name = productUpdateRequest.Name, Id = Guid.NewGuid().ToString() },
-            };
-
-            _products.Remove(existingProduct);
-            _products.Add(updatedProduct);
-
-            RepositoryResult repoSaveResult = await _productRepository.WriteAsync(_products, _cts.Token);
-            if (!repoSaveResult.Succeeded)
+            RepositoryResult saveResult = await _productRepository.WriteAsync(_products, _cts.Token);
+            if (!saveResult.Succeeded)
             {
                 return new ServiceResult
                 {
                     Succeeded = false,
                     StatusCode = 500,
-                    ErrorMessage = repoSaveResult.ErrorMessage ?? "Ett okänt fel inträffade vid filsparning"
+                    ErrorMessage = saveResult.ErrorMessage ?? "Ett okänt fel inträffade vid filsparning"
                 };
             }
 

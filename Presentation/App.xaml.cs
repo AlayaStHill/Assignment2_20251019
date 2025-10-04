@@ -1,10 +1,8 @@
 ﻿using ApplicationLayer.Interfaces;
 using ApplicationLayer.Services;
-using ApplicationLayer.Vet_ejvadskaheta;
 using Domain.Entities;
 using Domain.Interfaces;
 using Infrastructure.Repositories;
-using Infrastructure.Vet_ejvadskaheta;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Presentation.Interfaces;
