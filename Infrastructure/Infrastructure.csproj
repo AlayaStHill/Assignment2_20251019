@@ -7,10 +7,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Data\categories.json" />
+    <None Remove="Data\manufacturer.json" />
     <None Remove="Data\products.json" />
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Data\categories.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Data\manufacturer.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Data\products.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

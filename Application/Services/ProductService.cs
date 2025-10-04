@@ -6,12 +6,12 @@ using ApplicationLayer.DTOs;
 using ApplicationLayer.Interfaces;
 
 namespace ApplicationLayer.Services;
-public class ProductService(IProductRepository productRepository, ICategoryRepository categoryRepository, IManufacturerRepository manufacturerRepository) : IProductService
+public class ProductService(IRepository<Product> productRepository, IRepository<Category> categoryRepository, IRepository<Manufacturer> manufacturerRepository, FilesInformation filesInfo) : IProductService
 {
     // fältets namn ska reflektera interfacet (vad det gör), inte implementationen (hur det görs)
-    private readonly IProductRepository _productRepository = productRepository;
-    private readonly ICategoryRepository _categoryRepository = categoryRepository;
-    private readonly IManufacturerRepository _manufacturerRepository = manufacturerRepository;
+    private readonly IRepository<Product> _productRepository = productRepository;
+    private readonly IRepository<Category> _categoryRepository = categoryRepository;
+    private readonly IRepository<Manufacturer> _manufacturerRepository = manufacturerRepository;
     private List<Product> _products = [];
     // gäller för hela klassen - pekar alltid på den senaste instansen som newats i metoderna. När Cancel anropas stoppas just den instansen..Token tar emot stoppsignalen och vidarebefodrar den till koden som använden den. 
     private CancellationTokenSource _cts = null!;
@@ -168,8 +168,10 @@ public class ProductService(IProductRepository productRepository, ICategoryRepos
 
     }
 
-    public async Task<ServiceResult<Product>> SaveProductAsync(Product product) // MÅSTE FÅNGA UPP DATA = NULL I MAINWINDOW.XAML.CS
+    public async Task<ServiceResult<Product>> SaveProductAsync(ProductCreateRequest productCreateRequest) // MÅSTE FÅNGA UPP DATA = NULL I MAINWINDOW.XAML.CS
     {
+
+        //INTE KUNNA SPARA PRODUKTER MED SAMMA NAMN
         try
         {
             // Typen är redan specificerad i fältet. Här kommer en ny tilldelning bara. Deklarerar jag typen frånkopplar jag den från fältet och skapar en ny lokal variabel.
@@ -181,12 +183,12 @@ public class ProductService(IProductRepository productRepository, ICategoryRepos
                 return new ServiceResult<Product> { Succeeded = false, StatusCode = 500, ErrorMessage = ensureResult.ErrorMessage, Data = null };
 
 
+            //mappa om till product
 
 
 
 
-
-            product.ProductId = Guid.NewGuid().ToString();
+            productCreateRequest.Id = Guid.NewGuid().ToString();
             _products.Add(product);
 
             await _productRepository.WriteAsync(_products, _cts.Token);
@@ -218,7 +220,7 @@ public class ProductService(IProductRepository productRepository, ICategoryRepos
         }
     }
 
-    public async Task<ServiceResult> UpdateProductAsync(ProductUpdateRequest productUpdateRequest) // HUR MATA IN CATEGORY OCH MANUFACTURER!!!
+    public async Task<ServiceResult> UpdateProductAsync(ProductUpdateRequest productUpdateRequest) 
     {
         try
         {
@@ -228,7 +230,7 @@ public class ProductService(IProductRepository productRepository, ICategoryRepos
             if (!ensureResult.Succeeded)
                 return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = ensureResult.ErrorMessage };
 
-            Product? existingProduct = _products.FirstOrDefault(product => product.ProductId == productUpdateRequest.Id);
+            Product? existingProduct = _products.FirstOrDefault(product => product.Id == productUpdateRequest.Id);
             if (existingProduct == null)
             {
                 return new ServiceResult
@@ -239,12 +241,35 @@ public class ProductService(IProductRepository productRepository, ICategoryRepos
                 };
             }
 
+            RepositoryResult<bool> categoryExistsResult = await _categoryRepository.ExistsAsync(category => category.Name == productUpdateRequest.Name, _cts.Token);
+            if (!categoryExistsResult.Succeeded)
+            {
+                return new ServiceResult
+                {
+                    Succeeded = false,
+                    StatusCode = 500,
+                    ErrorMessage = categoryExistsResult.ErrorMessage ?? $"Det gick inte att kontrollera om kategorin {productUpdateRequest.Name} finns i systemet."
+                };
+            }
+
+                RepositoryResult<bool> manufacturerExistsResult = await _manufacturerRepository.ExistsAsync(manufacturer => manufacturer.Name == productUpdateRequest.Name, _cts.Token);
+            if (!manufacturerExistsResult.Succeeded)
+            {
+                return new ServiceResult
+                {
+                    Succeeded = false,
+                    StatusCode = 500,
+                    ErrorMessage = manufacturerExistsResult.ErrorMessage ?? $"Det gick inte att kontrollera om tillverkaren {productUpdateRequest.Name} finns i systemet."
+                };
+            }
+
+
             Product updatedProduct = new()
             {
-                ProductName = productUpdateRequest.Name,
+                Name = productUpdateRequest.Name,
                 Price = productUpdateRequest.Price,
-                Category = new Category { CategoryName = productUpdateRequest.CategoryName }, // OBS
-                Manufacturer = new Manufacturer { ManufacturerName = productUpdateRequest.ManufacturerName } // OBS
+                Category = categoryExistsResult.Data ? (await _categoryRepository.GetEntityAsync(category => category.Name == productUpdateRequest.Name, _cts.Token)).Data! : new Category { Name = productUpdateRequest.Name, Id = Guid.NewGuid().ToString() },
+                Manufacturer = categoryExistsResult.Data ? (await _manufacturerRepository.GetEntityAsync(manufacturer => manufacturer.Name == productUpdateRequest.Name, _cts.Token)).Data! : new Manufacturer { Name = productUpdateRequest.Name, Id = Guid.NewGuid().ToString() },
             };
 
             _products.Remove(existingProduct);
@@ -285,11 +310,3 @@ public class ProductService(IProductRepository productRepository, ICategoryRepos
 }
 
 
-/* 
-sätta id tillverkare + kategori: var newCategory = new Category:
-
-{
-    Id = categories.Count == 0 ? 1 : categories.Max(c => c.Id) + 1,
-    Name = product.Category.Name
-};
-*/

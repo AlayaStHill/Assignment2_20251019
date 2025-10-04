@@ -23,37 +23,46 @@ På Window-elementet finns olika attribut: title, xmlns, x:Class, source (src)
 public async Task<ProductServiceResult<Product>> SaveProductAsync(Product product) // MÅSTE FÅNGA UPP DATA = NULL I MAINWINDOW.XAML.CS
 
 
-Branchen: COMMITAT
-Added INavigationService 
-Restructuring after lesson 20250929: 
-Added ProductRequest-, ProductUpdateRequest-class. 
-Removed IFileRepository.
-Changed FileRepository to ProductJsonRepository and FileRepositoryResult to RepositoryResult.
-Added interface IRepository<T> and implementations: ManufacturerJsonRepository, CategoryJsonRepository. 
-Added EnsureLoadedAsync-method to ProductService. 
-Updated RepositoryResult with statuscodes.
-Added extension-class RepositoryExtensions with method GetOrCreateAsync
 
 Branchen: 
-Lesson 20251002: 
 Refactor: rename Class Library Application to Assignment2.Application
+Refactor: rename INavigationService to IViewNavigationService and NavigationService to ViewNavigationService
 
 
-GetOrCreateAsync-method completed...
+Refactor: remove GetOrCreateAsync-method from RepositoryExtensions
+Refactor: remove ProductJsonRepository, CategoryJsonRepository, ManufacturerJsonRepository and corresponding interfaces
+Feat(repository): add GetEntityAsync-method to JsonRepository
+Feat: add ExistsAsync-method to RepositoryExtensions
+Chore: add manufacturer.json and categories.json to Data-catalog
+Refactor: rename ProductRequest to ProductCreateRequest
+Refactor: update IRepository with GetEntityAsync and ExistsAsync
+Refactor: update ProductService UpdateProductAsync 
 
-Added: NavigationService
+
+
+refactor: repository restructuring and ProductService update
+
+- Remove GetOrCreateAsync from RepositoryExtensions
+- Remove ProductJsonRepository, CategoryJsonRepository, ManufacturerJsonRepository and corresponding interfaces
+- Add GetEntityAsync-method to JsonRepository
+- Add ExistsAsync-method to RepositoryExtensions
+- Add manufacturer.json and categories.json to Data folder
+- Rename ProductRequest to ProductCreateRequest
+- Update IRepository with GetEntityAsync and ExistsAsync
+- Update ProductService.UpdateProductAsync
 
 
 
 
-
-utöka product med tillverkare och kategorier ska kunna anges vid uppdaterande av produkt
-
-
-Att göra:
- + CategoryRepository
-IManufacturerRepository + ManufacturerRepository
-INavigationService + NavigationService
+ATT GÖRA:
+--------------
+GetOrCreateAsync
+ProductService med tillverkare och kategorier
+IViewNavigationService + ViewNavigationService
+lägga till i saveproduct så att man inte kan lägga till en produkt som redan finns. Case-sensitive??
+New sokution folder
+saveproducts 
+update
 
 --> MVVM
 
@@ -62,14 +71,13 @@ Enhetstester xUnit
 
 
 ??? Senare kan du alltid lägga till cache/minneslager, men just nu kommer det inte göra någon skillnad i din app – bara göra det svårare att förstå vad som händer.
+********inte case-sensitive produkt, tillverkare, kategori så att inte två produkter kan läggast till med samma namn fast små eller stor bokstäver
 
 
 
 
 
 
-NÄR DU SÄTTER DIG IGEN:
-vart placera med interfacet INavigationService. Hur ändra namespace för flyttade filer
 
 
 

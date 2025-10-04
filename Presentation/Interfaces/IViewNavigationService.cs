@@ -1,7 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Presentation.Interfaces; // det är wpf som behöver tillgång till den här
-public interface INavigationService
+public interface IViewNavigationService
 {
     void NavigateTo<TViewModel>() where TViewModel : ObservableObject;
 }

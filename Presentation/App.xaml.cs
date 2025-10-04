@@ -1,9 +1,15 @@
 ﻿using ApplicationLayer.Interfaces;
 using ApplicationLayer.Services;
+using ApplicationLayer.Vet_ejvadskaheta;
+using Domain.Entities;
 using Domain.Interfaces;
 using Infrastructure.Repositories;
+using Infrastructure.Vet_ejvadskaheta;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Presentation.Interfaces;
+using Presentation.Services;
+using System.IO;
 using System.Windows;
 
 namespace Presentation
@@ -17,11 +23,20 @@ namespace Presentation
             _host = Host.CreateDefaultBuilder()
                 .ConfigureServices(services =>
                 {
-                    services.AddSingleton<IProductRepository, ProductJsonRepository>();
+                    // ApplicationLayer
                     services.AddSingleton<IProductService, ProductService>();
 
-                    services.AddSingleton<IManufacturerRepository, ManufacturerJsonRepository>();
-                    services.AddSingleton<ICategoryRepository, CategoryJsonRepository>();
+                    // Infrastructure
+                    string dataDirectory = Path.Combine(AppContext.BaseDirectory, "Data");
+                    services.AddSingleton<IRepository<Product>>(serviceProvider => new JsonRepository<Product>(dataDirectory, "products.json"));
+                    services.AddSingleton<IRepository<Category>>(serviceProvider => new JsonRepository<Category>(dataDirectory, "categories.json"));
+                    services.AddSingleton<IRepository<Manufacturer>>(serviceProvider => new JsonRepository<Manufacturer>(dataDirectory, "manufacturers.json"));
+
+                    //Presentation
+                    services.AddSingleton<IViewNavigationService, ViewNavigationService>();
+                    services.AddSingleton<MainWindow>();
+
+
                 })
                 .Build();
 
