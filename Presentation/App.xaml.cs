@@ -21,10 +21,8 @@ namespace Presentation
             _host = Host.CreateDefaultBuilder()
                 .ConfigureServices(services =>
                 {
-                    // ApplicationLayer
                     services.AddSingleton<IProductService, ProductService>();
 
-                    // Infrastructure
                     string dataDirectory = Path.Combine(AppContext.BaseDirectory, "Data");
                     services.AddSingleton<IRepository<Product>>(serviceProvider => new JsonRepository<Product>(dataDirectory, "products.json"));
                     services.AddSingleton<IRepository<Category>>(serviceProvider => new JsonRepository<Category>(dataDirectory, "categories.json"));

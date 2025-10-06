@@ -30,3 +30,11 @@ När SetProperty körs:
 - PropertyChanged signalerar via {Binding} till View:n
 --> UI uppdateras automatiskt.
 */
+
+/*
+MainWindow = huvudfönstret. MainViewModel = styr innehållet i huvudfönstret. MainWindow ska visa olika vyer beroende av vad som händer i MainViewModel. 
+I MainWindow.XAML knyts de två ihop via d:DataContext="{d:DesignInstance Type=viewmodels:MainViewModel}" = MainViewModel blir DataContext för MainWindow i designläget. 
+DataContext = new MainViewModel(); kopplar vyn till den riktiga ViewModel-instansen i körläge. Skrivs i MainWidow vart???
+
+ <ContentControl Content="{Binding CurrentView}" />.
+*/

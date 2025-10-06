@@ -1,4 +1,15 @@
-﻿<Window x:Class="Presentation.MainWindow"
+﻿<!--DataContext mappar/kopplar vyn MainWindow till MainViewModel, så att all data-binding utgår från MainViewModel.
+    
+    ContentControl = fungerar som en container och får sitt innehåll (en ViewModel - ex. ProductListViewModel) via bindningen till CurrentViewModel. 
+    DataTemplate kopplar ViewModeln Från ContentControl till sin motsvarande View (UserControl), ex. ProductListView.
+    Ramverket WPF skapar utifrån ovan information automatiskt en instans av den angivna viewn - ProductListView.
+  
+    
+
+    
+-->
+    
+    <Window x:Class="Presentation.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
