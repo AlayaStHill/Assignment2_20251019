@@ -4,6 +4,7 @@
     DataTemplate kopplar ViewModeln Från ContentControl till sin motsvarande View (UserControl), ex. ProductListView.
     Ramverket WPF skapar utifrån ovan information automatiskt en instans av den angivna viewn - ProductListView.
   
+    .Resources = ett bibliotek av XAML-objekt (ex. style, brush, DataTemplate) som styr utseende/beteende hos kontroller/UI-element (button, listview, textbox..). ContenControl.Resources = resurser som gäller endast inom det specifika ContentControl-scopet som binder CurrentViewModel (till skillnad från Window-Application.Resources).
     
 
     
@@ -14,10 +15,23 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+            
+        xmlns:viewmodels="clr-namespace:Presentation.ViewModels"
+        xmlns:views="clr-namespace:Presentation.Views"
+        d:DataContext="{d:DesignInstance Type=viewmodels:MainViewModel}"
+            
         xmlns:local="clr-namespace:Presentation"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow" Height="500" Width="400">
     <Grid>
+        <ContentControl Content="{Binding CurrentViewModel}">
+            <ContentControl.Resources>
+                <DataTemplate DataType="{x:Type viewmodels:ProductListViewModel}">
+                    <views:ProductListView />
+                </DataTemplate>
 
+            </ContentControl.Resources>
+
+        </ContentControl>
     </Grid>
 </Window>
