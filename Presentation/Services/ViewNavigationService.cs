@@ -25,3 +25,4 @@ public class ViewNavigationService : IViewNavigationService
         _mainViewModel.CurrentViewModel = viewModel;
     }
 }
+//_viewNavigationService.NavigateTo<ProductListViewModel>(); Där ProductListViewModel är<TViewModel>
