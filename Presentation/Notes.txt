@@ -29,6 +29,7 @@ feat: add SetProduct to ProductEditViewModel
 
 
 
+
 feat: – när du lägger till en ny funktionalitet
 fix: – när du rättar ett fel
 refactor: – när du omstrukturerar utan ny funktion
