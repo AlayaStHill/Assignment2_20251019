@@ -25,11 +25,7 @@ public async Task<ProductServiceResult<Product>> SaveProductAsync(Product produc
 
 ---------------------------------------------------------------
 Branchen: 
-feat: add ProductEditViewModel-klass
-feat: add Edit- and Delete-Methods to ProductListViewModel
-refactor: _errorMessage to _statusMessage
-feat: add _statusColor-property to ProductListViewModel
-feat: add Action<TViewModel> configure as parameter to NavigateTo-method in ViewNavigationService 
+feat: add SetProduct to ProductEditViewModel
 
 
 
