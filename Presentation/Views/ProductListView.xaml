@@ -1,0 +1,91 @@
+﻿<!--Ange namespace (xmlns) för att kunna hämta upp klasser, properties och annan information 
+    från Models och ViewModels. 
+    d:DataContext =  anger vilket objekt bindningarna ska hämta data ifrån i designläge.
+    Type= talar om vilken klass som ska användas för att skapa objektet (DataContext). I det här fallet ProductListViewModel från namespace viewmodels.
+    d:DesignInstance: skapar en tillfällig instans av DataContext-objektet, vilket ger bindningsstöd och tillgång till properties som finns i viewmodeln.  
+    Designläge: med andra ord XAML-förhandsvisningen, inte när programmet körs. 
+    
+    Bygg programmet om DataContext blir blåmarkerat.
+
+    {Binding Title} = hämta värdet från propertyn Title i det objekt som är satt som DataContext. Bara properties som är publika
+    Command = ett sätt för view att anropa en metod i viewmodeln. Med Command-binding på en Button säger Command: när knappen klickas, kör den här metoden
+    
+    ListView.ItemTemplate anger en XAML-mall (DataTemplate) som beskriver hur varje objekt i ItemsSource ska visas i listan.
+    
+    SharedSizeGroup="...Column" = gör alla kolumner som har SharedSizeGroup="NameColumn" lika breda och basera bredden på den största cellen i gruppen.
+    
+    CommandParameter="{Binding .}" Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" 
+    I en ListView.ItemTemplate är DataContext inte ViewModeln,utan den aktuella radens data, dvs en Product. EditCommand finns inte inne i raden. EditCommand hittas via RelativeSource: sök i närmsta UserControls DataContext (ProductListViewModel) och hämta därifrån. 
+    CommandParameter anger vad som ska skickas som argument till den metod som hör ihop med kommandot (Edit). Binding . = hela det aktuella objektet (Product) skickas. Binding.Id = endast produktens Id skickas.
+-->
+    
+    
+    
+    <UserControl x:Class="Presentation.Views.ProductListView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:Presentation.Views"
+             
+             xmlns:entities="clr-namespace:Domain.Entities;assembly=Domain"
+             xmlns:viewmodels="clr-namespace:Presentation.ViewModels"
+             d:DataContext="{d:DesignInstance Type=viewmodels:ProductListViewModel}"
+             
+             mc:Ignorable="d" 
+             Background="LightGray"
+             d:DesignHeight="500" d:DesignWidth="800">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto" />  <!-- Felmeddelande -->
+            <RowDefinition Height="auto" /> <!-- Titel, ny produkt-knapp -->
+            <RowDefinition Height="*" /> <!-- Produktlistan -->
+        </Grid.RowDefinitions>
+        <!-- Felmeddelande -->
+        <TextBlock Grid.Row="0" Text="{Binding StatusMessage}" Margin="0 0 0 0" Foreground="{Binding StatusColor}" TextWrapping="Wrap" />
+
+        <!-- Titel, ny-produkt-knapp-->
+        <Grid Grid.Row="1" >
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <TextBlock Grid.Column="0" VerticalAlignment="Center" Text="{Binding Title, FallbackValue=Produktlista}" FontWeight="Bold" FontSize="18" Margin="0 0 0 20" />
+            <Button Grid.Column="1" Command="{Binding NavigateToProductAddViewCommand}" Content="Ny produkt" VerticalAlignment="Center" Margin="0 10 0 0" Padding="5 5" Background="LightBlue" FontSize="10" FontWeight="Bold"/>
+        </Grid>
+        
+        <!-- Produktlista -->
+        <ListView Grid.Row="3"  Grid.IsSharedSizeScope="True" ItemsSource="{Binding ProductList}" HorizontalContentAlignment="Stretch">
+            <ListView.ItemTemplate>
+                <DataTemplate DataType="x:Type entities:Product">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition  Width="Auto" SharedSizeGroup="NameColumn" />
+                            <ColumnDefinition  Width="Auto" SharedSizeGroup="PriceColumn" />
+                            <ColumnDefinition  Width="Auto" SharedSizeGroup="CategoryColumn" />
+                            <ColumnDefinition  Width="Auto" SharedSizeGroup="ManufacturerColumn" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0" Text="{Binding Name}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Text="{Binding Price}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" Text="{Binding Category.Name, FallbackValue='Ej inlagd', TargetNullValue='Ej inlagd'}" VerticalAlignment="Center" Style="{StaticResource MissingValueTextStyle}" />
+                        <TextBlock Grid.Column="3" Text="{Binding Manufacturer.Name, FallbackValue='Ej inlagd', TargetNullValue='Ej inlagd'}" VerticalAlignment="Center" Style="{StaticResource MissingValueTextStyle}" />
+
+                        <!-- Redigera-, ta bort-knappar -->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <Button Content="Redigera" CommandParameter="{Binding .}" Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                            <Button Content="Ta bort" CommandParameter="{Binding Id}" Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />  
+                        </StackPanel>
+
+                    </Grid>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+
+
+
+    </Grid>
+</UserControl>
+

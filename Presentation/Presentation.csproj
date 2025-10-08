@@ -7,11 +7,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <UserSecretsId>fe59cff8-b347-4284-9a03-ba1ff2132065</UserSecretsId>
+    <StartupObject>Presentation.App</StartupObject>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Folder Include="Views\" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />

@@ -170,31 +170,31 @@ public class ProductService(IRepository<Product> productRepository, IRepository<
 
     }
 
-    public async Task<ServiceResult<Product>> SaveProductAsync(ProductCreateRequest productCreateRequest) // MÅSTE FÅNGA UPP DATA = NULL I MAINWINDOW.XAML.CS
+    public async Task<ServiceResult<Product>> SaveProductAsync(ProductCreateRequest productCreateRequest) // MÅSTE FÅNGA UPP DATA = NULL I MAINWINDOW.XAML.CS 
     {
-        if (string.IsNullOrWhiteSpace(productCreateRequest.Name) || productCreateRequest.Price >= 0)
-        {
-            return new ServiceResult<Product>
-            {
-                Succeeded = false,
-                // BAD REQUEST
-                StatusCode = 400,
-                ErrorMessage = "Produktfälten är inte korrekt ifyllda."
-            };
-        }
-
         try
         {
             // Typen är redan specificerad i fältet. Här kommer en ny tilldelning bara. Deklarerar jag typen frånkopplar jag den från fältet och skapar en ny lokal variabel.
             // Skapar en ny instans för att säkerställa en ny nollställd _cts utan pågående cancellation. 
             _cts = new CancellationTokenSource();
 
+            if (string.IsNullOrWhiteSpace(productCreateRequest.Name) || productCreateRequest.Price <= 0)
+            {
+                return new ServiceResult<Product>
+                {
+                    Succeeded = false,
+                    // BAD REQUEST
+                    StatusCode = 400,
+                    ErrorMessage = "Produktfälten är inte korrekt ifyllda."
+                };
+            }
+
             ServiceResult ensureResult = await EnsureLoadedAsync();
             if (!ensureResult.Succeeded)
                 return new ServiceResult<Product> { Succeeded = false, StatusCode = 500, ErrorMessage = ensureResult.ErrorMessage, Data = null };
 
             // Kontrollera om produkten redan finns
-            bool productExists = _products.Any(product => product.Name == productCreateRequest.Name);
+            bool productExists = _products.Any(product => product.Name.Equals(productCreateRequest.Name, StringComparison.OrdinalIgnoreCase));
 
             if (productExists) 
             {
@@ -241,11 +241,22 @@ public class ProductService(IRepository<Product> productRepository, IRepository<
         }
     }
 
-    public async Task<ServiceResult> UpdateProductAsync(ProductUpdateRequest productUpdateRequest) 
+    public async Task<ServiceResult> UpdateProductAsync(ProductUpdateRequest productUpdateRequest)  
     {
         try
         {
             _cts = new CancellationTokenSource();
+
+            if (string.IsNullOrWhiteSpace(productUpdateRequest.Name) || productUpdateRequest.Price <= 0)
+            {
+                return new ServiceResult<Product>
+                {
+                    Succeeded = false,
+                    // BAD REQUEST
+                    StatusCode = 400,
+                    ErrorMessage = "Produktfälten namn och pris är inte korrekt ifyllda."
+                };
+            }
 
             ServiceResult ensureResult = await EnsureLoadedAsync();
             if (!ensureResult.Succeeded)
@@ -259,6 +270,19 @@ public class ProductService(IRepository<Product> productRepository, IRepository<
                     Succeeded = false,
                     StatusCode = 404,
                     ErrorMessage = $"Produkten med Id {productUpdateRequest.Id} kunde inte hittas"
+                };
+            }
+
+            // Jämför product.Name med productUpdateRequest.Name tecken för tecken och ignorerar skillnaden mellan stora/små bokstäver, Ordinal jämförelse = jämför bokstävernas nummer i dator (Unicode-värden), inte deras plats i alfabetet som kan skilja sig beroende på språkinställning.
+            bool productExists = _products.Any(product => product.Name.Equals(productUpdateRequest.Name, StringComparison.OrdinalIgnoreCase) && product.Id != productUpdateRequest.Id); // Finns det någon produkt med annat Id som redan har det här namnet
+            if (productExists)
+            {
+                return new ServiceResult
+                {
+                    Succeeded = false,
+                    // CONFLICT
+                    StatusCode = 409,
+                    ErrorMessage = $"En produkt med namnet {productUpdateRequest.Name} finns redan i systemet.",
                 };
             }
 

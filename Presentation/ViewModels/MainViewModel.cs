@@ -1,5 +1,4 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using System.Windows.Controls;
 
 namespace Presentation.ViewModels;
 // Har all funktionalitet som styr MainWindow, ex. knappar som byter vy (hantera navigeringen mellan vyerna) och laddar innehåll. 
@@ -29,4 +28,12 @@ När SetProperty körs:
 - OnPropertyChanged anropas (hjälpmetod för att trigga PropertyChanged)
 - PropertyChanged signalerar via {Binding} till View:n
 --> UI uppdateras automatiskt.
+*/
+
+/*
+MainWindow = huvudfönstret. MainViewModel = styr innehållet i huvudfönstret. MainWindow ska visa olika vyer beroende av vad som händer i MainViewModel. 
+I MainWindow.XAML knyts de två ihop via d:DataContext="{d:DesignInstance Type=viewmodels:MainViewModel}" = MainViewModel blir DataContext för MainWindow i designläget. 
+DataContext = new MainViewModel(); kopplar vyn till den riktiga ViewModel-instansen i körläge. Skrivs i MainWidow vart???
+
+ <ContentControl Content="{Binding CurrentView}" />.
 */
