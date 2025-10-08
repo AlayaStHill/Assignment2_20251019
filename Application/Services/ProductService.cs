@@ -172,22 +172,22 @@ public class ProductService(IRepository<Product> productRepository, IRepository<
 
     public async Task<ServiceResult<Product>> SaveProductAsync(ProductCreateRequest productCreateRequest) // MÅSTE FÅNGA UPP DATA = NULL I MAINWINDOW.XAML.CS 
     {
-        if (string.IsNullOrWhiteSpace(productCreateRequest.Name) || productCreateRequest.Price <= 0)
-        {
-            return new ServiceResult<Product>
-            {
-                Succeeded = false,
-                // BAD REQUEST
-                StatusCode = 400,
-                ErrorMessage = "Produktfälten är inte korrekt ifyllda."
-            };
-        }
-
         try
         {
             // Typen är redan specificerad i fältet. Här kommer en ny tilldelning bara. Deklarerar jag typen frånkopplar jag den från fältet och skapar en ny lokal variabel.
             // Skapar en ny instans för att säkerställa en ny nollställd _cts utan pågående cancellation. 
             _cts = new CancellationTokenSource();
+
+            if (string.IsNullOrWhiteSpace(productCreateRequest.Name) || productCreateRequest.Price <= 0)
+            {
+                return new ServiceResult<Product>
+                {
+                    Succeeded = false,
+                    // BAD REQUEST
+                    StatusCode = 400,
+                    ErrorMessage = "Produktfälten är inte korrekt ifyllda."
+                };
+            }
 
             ServiceResult ensureResult = await EnsureLoadedAsync();
             if (!ensureResult.Succeeded)
@@ -246,6 +246,17 @@ public class ProductService(IRepository<Product> productRepository, IRepository<
         try
         {
             _cts = new CancellationTokenSource();
+
+            if (string.IsNullOrWhiteSpace(productUpdateRequest.Name) || productUpdateRequest.Price <= 0)
+            {
+                return new ServiceResult<Product>
+                {
+                    Succeeded = false,
+                    // BAD REQUEST
+                    StatusCode = 400,
+                    ErrorMessage = "Produktfälten namn och pris är inte korrekt ifyllda."
+                };
+            }
 
             ServiceResult ensureResult = await EnsureLoadedAsync();
             if (!ensureResult.Succeeded)

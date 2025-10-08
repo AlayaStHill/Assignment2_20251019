@@ -7,6 +7,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Presentation.Interfaces;
 using Presentation.Services;
+using Presentation.ViewModels;
+using Presentation.Views;
 using System.IO;
 using System.Windows;
 
@@ -21,16 +23,27 @@ namespace Presentation
             _host = Host.CreateDefaultBuilder()
                 .ConfigureServices(services =>
                 {
-                    services.AddSingleton<IProductService, ProductService>();
+                    services.AddScoped<IProductService, ProductService>();
 
                     string dataDirectory = Path.Combine(AppContext.BaseDirectory, "Data");
-                    services.AddSingleton<IRepository<Product>>(serviceProvider => new JsonRepository<Product>(dataDirectory, "products.json"));
-                    services.AddSingleton<IRepository<Category>>(serviceProvider => new JsonRepository<Category>(dataDirectory, "categories.json"));
-                    services.AddSingleton<IRepository<Manufacturer>>(serviceProvider => new JsonRepository<Manufacturer>(dataDirectory, "manufacturers.json"));
+                    services.AddScoped<IRepository<Product>>(serviceProvider => new JsonRepository<Product>(dataDirectory, "products.json"));
+                    services.AddScoped<IRepository<Category>>(serviceProvider => new JsonRepository<Category>(dataDirectory, "categories.json"));
+                    services.AddScoped<IRepository<Manufacturer>>(serviceProvider => new JsonRepository<Manufacturer>(dataDirectory, "manufacturers.json"));
 
                     //Presentation
                     services.AddSingleton<IViewNavigationService, ViewNavigationService>();
                     services.AddSingleton<MainWindow>();
+                    services.AddSingleton<MainViewModel>();
+
+                    services.AddScoped<ProductListViewModel>();
+                    // Startvyn. Transient, laddar in listan på nytt varje gång man går in på vyn
+                    services.AddScoped<ProductListView>(); 
+
+                    //services.AddTransient<ProductAddViewModel>();
+                    //services.AddTransient<ProductAddView>();
+
+                    //services.AddScoped<ProductListEditViewModel>();
+                    //services.AddScoped<ProductListEditView>();
 
 
                 })
@@ -40,22 +53,33 @@ namespace Presentation
 
         // Måste ta bort StartupUri="MainWindow.xaml"> från App.xaml:  programmet startar annars upp utan dependency injection
         // Eftersom vi tog bort StartupUri måste vi aktivera programmet på ett annat sätt:
-        protected override async void OnStartup(StartupEventArgs e)
+        protected override void OnStartup(StartupEventArgs e)
         {
             // Alla konfigurationer som behövs vid startup???
             base.OnStartup(e);
 
-            // Plockar ut IProductService från DI-containern. Så att man kan --->
-            IProductService productService = _host.Services.GetRequiredService<IProductService>(); 
-            // ---> hämta alla produkter direkt när applikationen startar. Det kan man göra pga. Build Action: Content och Copy to Output Directory: Always
-            await productService.GetProductsAsync(); 
+            // Hämtar en instans av MainViewModel från DI. 
+            MainViewModel mainViewModel = _host!.Services.GetRequiredService<MainViewModel>();
+            // Sätter propertyn CurrentViewModel inne i MainViewModel till en instans av ProductListViewModel. Bestämmer vilken vy programmet startas upp med (kan göras inuti MainViewModel-filen också)
+            mainViewModel.CurrentViewModel = _host!.Services.GetRequiredService<ProductListViewModel>(); 
+            
+            // Hämtar MainWindow från DI
+            MainWindow mainWindow = _host!.Services.GetRequiredService<MainWindow>();
+            // Mappar MainWindow till MainViewModel. Görs ju i MainWindow.xaml??
+            mainWindow.DataContext = mainViewModel;
 
-          
+            mainWindow.Show();
+
         }
 
         
     }
 }
+/* 
+Singleton: informationen kvarstår från tidigare när man går in på vyn igen. instansieras en gång
+Transient: informationen nollställs varje gång. Instansieras på nytt varje gång man går in på vyn
+
+*/
 
 
 

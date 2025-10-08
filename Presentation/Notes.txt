@@ -25,7 +25,17 @@ public async Task<ProductServiceResult<Product>> SaveProductAsync(Product produc
 
 ---------------------------------------------------------------
 Branchen: 
-feat: add ProductListView usercontrol
+feat: add ProductListView usercontrol and register in DI-container
+feat: ProductListView setup complete with "Ny produkt"-, "Redigera"-, "Ta Bort"-button and productlist-display
+feat: add GlobalStyles Resource Dictionary in Assests-katalog
+feat: add NavigateToProductAddView-method to ProductListViewModel
+feat: add ProductAddViewModel-class to ViewModel-katalog and register in DI-container
+
+
+feat: add Edit- and Delete-Methods to ProductListViewModel
+
+refactor: Onstarup in App.xaml.cs
+
 
 
 feat: – när du lägger till en ny funktionalitet
@@ -53,12 +63,10 @@ refactor: repository restructuring and ProductService update
 
 ATT GÖRA:
 --------------
-IViewNavigationService + ViewNavigationService
-lägga till i saveproduct så att man inte kan lägga till en produkt som redan finns. Case-sensitive??
-saveproducts 
-i UPDATEPRODUCT MÅSTE HA KOLL SÅ ATT MAN INTE KAN UPPDATERA TILL EN BEFINTLIG PRODUKT!!!!!!
+cancellatiiontoken viewmodels? 
 
---> MVVM
+
+
 
 Enhetstester xUnit 
 (integrationstest Repository??)

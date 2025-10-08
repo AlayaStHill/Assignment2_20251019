@@ -1,0 +1,14 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Stil för "Ej inlagd"-text -->
+    <Style x:Key="MissingValueTextStyle" TargetType="TextBlock">
+        <Style.Triggers>
+            <Trigger Property="Text" Value="Ej inlagd">
+                <Setter Property="Foreground" Value="Gray" />
+                <Setter Property="FontStyle" Value="Italic" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+</ResourceDictionary>

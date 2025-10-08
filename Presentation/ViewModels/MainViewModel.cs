@@ -1,5 +1,4 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using System.Windows.Controls;
 
 namespace Presentation.ViewModels;
 // Har all funktionalitet som styr MainWindow, ex. knappar som byter vy (hantera navigeringen mellan vyerna) och laddar innehåll. 

@@ -1,6 +1,7 @@
 ﻿using ApplicationLayer.Interfaces;
 using ApplicationLayer.Results;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Domain.Entities;
 using Presentation.Interfaces;
 using System.Collections.ObjectModel;
@@ -11,9 +12,6 @@ public partial class ProductListViewModel : ObservableObject
 {
     private readonly IViewNavigationService _viewNavigationService;
     private readonly IProductService _productService;
-    [ObservableProperty]
-    // ObservableCollection = lista som implementerar INotifyCollectionChanged (signalerar när innehållet förändras) och INotifyPropertyChanged (signalerar när propertyn byts ut mot en ny instans - propertyn pekar på en ny lista)
-    private ObservableCollection<Product> _productList = [];
 
     public ProductListViewModel(IViewNavigationService navigationService, IProductService productService)
     {
@@ -27,6 +25,9 @@ public partial class ProductListViewModel : ObservableObject
         _ = LoadAsync(); 
     }
 
+    [ObservableProperty]
+    // ObservableCollection = lista som implementerar INotifyCollectionChanged (signalerar när innehållet förändras) och INotifyPropertyChanged (signalerar när propertyn byts ut mot en ny instans - propertyn pekar på en ny lista)
+    private ObservableCollection<Product> _productList = [];
 
     [ObservableProperty] // genererar automatiskt en publik property bindbar till UI: public string Title {get => _title; set => SetProperty(ref _title, value }
     private string _title = "Produktlista";
@@ -45,7 +46,7 @@ public partial class ProductListViewModel : ObservableObject
         }
         else
         {
-            ErrorMessage = loadResult!.ErrorMessage ?? "Ett fel uppstod när produkterna hämtades"; // Få upp i UI
+            ErrorMessage = loadResult!.ErrorMessage ?? "Kunde inte hämta produkterna. Försök igen senare."; // Få upp i UI !!!
         }
     }
 
@@ -57,10 +58,33 @@ public partial class ProductListViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            ErrorMessage = $"Ett fel uppstod när produkterna hämtades: {ex.Message}";
+            ErrorMessage = $"Ett oväntat fel uppstod: {ex.Message}";
         }
     }
 
 
+   [RelayCommand] // Kopplingen mellan UI-kontroller (Button ex) och ViewModelns metoder. Istället för att viewn direkt anropar dem i code-behind (ej MVVM). Command="{Binding NavigateTo..Command}" fungerar nu i viewn.
+    private void NavigateToProductAddView()
+    {
+        _viewNavigationService.NavigateTo<ProductAddViewModel>();
+    }
+
+    //[RelayCommand]
+    //private void Edit(Product product)
+    //{
+    //    var evm = _serviceProvider.GetRequiredService<UserEditViewModel>();
+    //    evm.SetUser(product);
+
+    //    _viewNavigationService.NavigateTo<ProductEditViewModel>();
+
+    //}
+
+    //[RelayCommand]
+    //private void Delete(int userId)
+    //{
+    //    _userService.DeleteUserById(userId);
+    //    PopulateUserList();
+    //}
 }
 
+// CANCELLATIONTOKEN - hanteras på lägre nivå enbart?
