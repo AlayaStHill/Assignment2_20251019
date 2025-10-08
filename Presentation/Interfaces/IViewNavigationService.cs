@@ -3,7 +3,7 @@
 namespace Presentation.Interfaces; 
 public interface IViewNavigationService
 {
-    void NavigateTo<TViewModel>() where TViewModel : ObservableObject;
+    void NavigateTo<TViewModel>(Action<TViewModel>? configure = null) where TViewModel : ObservableObject;
 }
 
 

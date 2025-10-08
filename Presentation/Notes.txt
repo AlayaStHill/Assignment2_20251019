@@ -25,16 +25,11 @@ public async Task<ProductServiceResult<Product>> SaveProductAsync(Product produc
 
 ---------------------------------------------------------------
 Branchen: 
-feat: add ProductListView usercontrol and register in DI-container
-feat: ProductListView setup complete with "Ny produkt"-, "Redigera"-, "Ta Bort"-button and productlist-display
-feat: add GlobalStyles Resource Dictionary in Assests-katalog
-feat: add NavigateToProductAddView-method to ProductListViewModel
-feat: add ProductAddViewModel-class to ViewModel-katalog and register in DI-container
-
-
+feat: add ProductEditViewModel-klass
 feat: add Edit- and Delete-Methods to ProductListViewModel
-
-refactor: Onstarup in App.xaml.cs
+refactor: _errorMessage to _statusMessage
+feat: add _statusColor-property to ProductListViewModel
+feat: add Action<TViewModel> configure as parameter to NavigateTo-method in ViewNavigationService 
 
 
 

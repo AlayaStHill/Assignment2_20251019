@@ -33,7 +33,10 @@ public partial class ProductListViewModel : ObservableObject
     private string _title = "Produktlista";
 
     [ObservableProperty]
-    private string? _errorMessage;
+    private string? _statusMessage;
+
+    [ObservableProperty]
+    private string? _statusColor;
 
     private async Task PopulateProductListAsync()
     {
@@ -46,7 +49,8 @@ public partial class ProductListViewModel : ObservableObject
         }
         else
         {
-            ErrorMessage = loadResult!.ErrorMessage ?? "Kunde inte hämta produkterna. Försök igen senare."; // Få upp i UI !!!
+            StatusMessage = loadResult!.ErrorMessage ?? "Kunde inte hämta produkterna. Försök igen senare."; 
+            StatusColor = "red";
         }
     }
 
@@ -58,7 +62,8 @@ public partial class ProductListViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            ErrorMessage = $"Ett oväntat fel uppstod: {ex.Message}";
+            StatusMessage = $"Ett oväntat fel uppstod: {ex.Message}";
+            StatusColor = "red";
         }
     }
 
@@ -69,22 +74,42 @@ public partial class ProductListViewModel : ObservableObject
         _viewNavigationService.NavigateTo<ProductAddViewModel>();
     }
 
-    //[RelayCommand]
-    //private void Edit(Product product)
-    //{
-    //    var evm = _serviceProvider.GetRequiredService<UserEditViewModel>();
-    //    evm.SetUser(product);
+    [RelayCommand]
+    private void Edit(Product product)
+    { 
+        // konfigurera ProductEditViewModel med metoden SetProduct(product) innan ProductEditView visas. 
+        _viewNavigationService.NavigateTo<ProductEditViewModel>(viewmodel => viewmodel.SetProduct(product));
 
-    //    _viewNavigationService.NavigateTo<ProductEditViewModel>();
+    }
 
-    //}
+    [RelayCommand] 
+    private async Task Delete(string productId)
+    {
+        try // Pratar med fil -> try-catch fånga oförutsedda tekniska fel
+        {
+            ServiceResult deleteResult = await _productService.DeleteProductAsync(productId); 
+            if (deleteResult.Succeeded)
+            {
+                await PopulateProductListAsync();
 
-    //[RelayCommand]
-    //private void Delete(int userId)
-    //{
-    //    _userService.DeleteUserById(userId);
-    //    PopulateUserList();
-    //}
+                StatusMessage = "Produkten har tagits bort";
+                StatusColor = "green";
+            }
+            else
+            {
+                StatusMessage = deleteResult.ErrorMessage ?? "Kunde inte ta bort produkten";
+                StatusColor = "red";
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Ett oväntat fel uppstod: {ex.Message}";
+            StatusColor = "red";    
+        }
+      
+    }
 }
 
-// CANCELLATIONTOKEN - hanteras på lägre nivå enbart?
+// CANCELLATIONTOKEN - hanteras på lägre nivå enbart??
+
+// Ska statusmeddelande förv´svinna efter ett  tag?

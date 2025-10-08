@@ -37,13 +37,13 @@ namespace Presentation
 
                     services.AddScoped<ProductListViewModel>();
                     // Startvyn. Transient, laddar in listan på nytt varje gång man går in på vyn
-                    services.AddScoped<ProductListView>(); 
+                    services.AddScoped<ProductListView>();
 
-                    //services.AddTransient<ProductAddViewModel>();
+                    services.AddTransient<ProductAddViewModel>();
                     //services.AddTransient<ProductAddView>();
 
-                    //services.AddScoped<ProductListEditViewModel>();
-                    //services.AddScoped<ProductListEditView>();
+                    services.AddScoped<ProductEditViewModel>();
+                    //services.AddScoped<ProductEditView>();
 
 
                 })
