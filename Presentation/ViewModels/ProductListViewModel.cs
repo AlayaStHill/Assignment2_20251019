@@ -54,11 +54,12 @@ public partial class ProductListViewModel : ObservableObject
         }
     }
 
-    private async Task LoadAsync() // mellanlager, ansvarsseparation. styr när laddning sker, fångar tekniska/oförutsedda fel
+    // mellanlager, ansvarsseparation. styr när laddning sker, fångar tekniska/oförutsedda fel
+    private async Task LoadAsync() 
     {
         try
-        {
-            await PopulateProductListAsync(); // logiken: hämtar/uppdaterar data, hanterar affärslogiska/förväntade fel, test- och återanvändbar
+        {   // logiken: hämtar/uppdaterar data, hanterar affärslogiska/förväntade fel, test- och återanvändbar
+            await PopulateProductListAsync(); 
         }
         catch (Exception ex)
         {

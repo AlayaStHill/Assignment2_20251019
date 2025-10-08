@@ -25,9 +25,8 @@ public async Task<ProductServiceResult<Product>> SaveProductAsync(Product produc
 
 ---------------------------------------------------------------
 Branchen: 
-feat: add SetProduct to ProductEditViewModel
 
-
+feat: ProductEditViewModel and ProductAddViewModell binding to MainWindow
 
 
 feat: – när du lägger till en ny funktionalitet
