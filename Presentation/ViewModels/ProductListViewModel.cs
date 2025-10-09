@@ -38,27 +38,26 @@ public partial class ProductListViewModel : ObservableObject
     [ObservableProperty]
     private string? _statusColor;
 
-    private async Task PopulateProductListAsync()
+    public async Task PopulateProductListAsync()
     {
         ServiceResult<IEnumerable<Product>> loadResult = await _productService.GetProductsAsync();
         // loadresult är inte null, returnerar alltid ett nytt ServiceResult-objekt i GetProducts
-        if (loadResult.Succeeded)
+        if (!loadResult.Succeeded)
         {
-            // Data från fil kan vara null (inget alls) eller tom (listan innehåller inga element)
-            ProductList = new ObservableCollection<Product>(loadResult.Data ?? []);
-        }
-        else
-        {
-            StatusMessage = loadResult!.ErrorMessage ?? "Kunde inte hämta produkterna. Försök igen senare."; 
+            StatusMessage = loadResult!.ErrorMessage ?? "Kunde inte hämta produkterna. Försök igen senare.";
             StatusColor = "red";
+            return;
         }
+        // Data från fil kan vara null (inget alls) eller tom (listan innehåller inga element)
+        ProductList = new ObservableCollection<Product>(loadResult.Data ?? []);
     }
 
-    private async Task LoadAsync() // mellanlager, ansvarsseparation. styr när laddning sker, fångar tekniska/oförutsedda fel
+    // mellanlager, ansvarsseparation. styr när laddning sker, fångar tekniska/oförutsedda fel
+    private async Task LoadAsync() 
     {
         try
-        {
-            await PopulateProductListAsync(); // logiken: hämtar/uppdaterar data, hanterar affärslogiska/förväntade fel, test- och återanvändbar
+        {   // logiken: hämtar/uppdaterar data, hanterar affärslogiska/förväntade fel, test- och återanvändbar
+            await PopulateProductListAsync(); 
         }
         catch (Exception ex)
         {
@@ -75,31 +74,29 @@ public partial class ProductListViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void Edit(Product product)
+    private void Edit(Product selectedProduct)
     { 
         // konfigurera ProductEditViewModel med metoden SetProduct(product) innan ProductEditView visas. 
-        _viewNavigationService.NavigateTo<ProductEditViewModel>(viewmodel => viewmodel.SetProduct(product));
-
+        _viewNavigationService.NavigateTo<ProductEditViewModel>(viewmodel => viewmodel.SetProduct(selectedProduct));
     }
 
     [RelayCommand] 
-    private async Task Delete(string productId)
+    private async Task Delete(string productId) 
     {
         try // Pratar med fil -> try-catch fånga oförutsedda tekniska fel
         {
             ServiceResult deleteResult = await _productService.DeleteProductAsync(productId); 
-            if (deleteResult.Succeeded)
-            {
-                await PopulateProductListAsync();
-
-                StatusMessage = "Produkten har tagits bort";
-                StatusColor = "green";
-            }
-            else
+            if (!deleteResult.Succeeded)
             {
                 StatusMessage = deleteResult.ErrorMessage ?? "Kunde inte ta bort produkten";
                 StatusColor = "red";
+                return; // Metoden avbryts om något gick fel, istället för att fortsätta på nästa rad
             }
+
+            await PopulateProductListAsync();
+
+            StatusMessage = "Produkten har tagits bort";
+            StatusColor = "green";
         }
         catch (Exception ex)
         {

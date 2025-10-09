@@ -25,11 +25,11 @@ public async Task<ProductServiceResult<Product>> SaveProductAsync(Product produc
 
 ---------------------------------------------------------------
 Branchen: 
-feat: add ProductEditViewModel-klass
-feat: add Edit- and Delete-Methods to ProductListViewModel
-refactor: _errorMessage to _statusMessage
-feat: add _statusColor-property to ProductListViewModel
-feat: add Action<TViewModel> configure as parameter to NavigateTo-method in ViewNavigationService 
+refactor: Save-method in ProductAddViewModel
+
+
+fix: TextBlock Grid-column alignment
+
 
 
 
@@ -58,8 +58,9 @@ refactor: repository restructuring and ProductService update
 
 ATT GÖRA:
 --------------
-cancellatiiontoken viewmodels? 
-
+Ta bort ketgori och tillverkare från ny AddView
+använd konsekvent if (!result) i metoderna
+bryt ut och skapa hjälpmetoder för att korta ned metoder
 
 
 
@@ -93,3 +94,18 @@ Domain =		 Entities och Interfaces (vad systemet är). Kataloger: Project Referen
 Application =	 Use cases och affärslogik (vad systemet gör). Project Reference: Domain
 Infrastructure = Repositories och teknik (hur systemet lagrar data). Project Reference: Domain
 Presentation =	 UI/MVVM (hur användaren interagerar). Project Reference: Domain (Composition Root - DI-container)
+
+
+
+
+xUnit:
+kopiera interface + metoder i productservice. samma med fileservice och Ifileservice - detta ska testas
+extensionmethods + helpers men inte readasync i filerepository
+// helpers, extensionmethods testas, id visas i listvyn eller editvyn
+
+
+Repository: tekniskt skydd (filåtkomst, skrivfel)
+
+Service: affärslogiskt skydd (t.ex. “produkt finns redan”)
+
+ViewModel: användarskydd (UI’t kraschar inte)
