@@ -29,6 +29,12 @@
                 <DataTemplate DataType="{x:Type viewmodels:ProductListViewModel}">
                     <views:ProductListView />
                 </DataTemplate>
+                <DataTemplate DataType="{x:Type viewmodels:ProductAddViewModel}">
+                    <views:ProductAddView />
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type viewmodels:ProductEditViewModel}">
+                    
+                </DataTemplate>
 
             </ContentControl.Resources>
 

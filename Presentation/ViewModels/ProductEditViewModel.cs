@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Domain.Entities;
 using Presentation.Interfaces;
 
+
 namespace Presentation.ViewModels;
 
 public partial class ProductEditViewModel(IViewNavigationService viewNavigationService, IProductService productService) : ObservableObject
@@ -13,14 +14,16 @@ public partial class ProductEditViewModel(IViewNavigationService viewNavigationS
     [ObservableProperty]
     private Product? _product;
 
-    public void SetProduct(Product product)
+    // Kopierar över den valda produktens data till ViewModelns redigeringsinstans, så att användaren kan se och ändra informationen i UI:t innan ändringarna sparas.
+    public void SetProduct(Product selectedProduct)
     {
+        // Skapar en ny instans för redigering. Originalet påverkas inte förrän SaveCommand körs, vilket gör att CancelCommand kan avbryta utan att ändra originalet.
         Product = new Product
         {
-            Name = product.Name,
-            Price = product.Price,
-            Category = product.Category,
-            Manufacturer = product.Manufacturer
+            Name = selectedProduct.Name,
+            Price = selectedProduct.Price,
+            Category = selectedProduct.Category,
+            Manufacturer = selectedProduct.Manufacturer
         };
         
 

@@ -28,6 +28,7 @@ Branchen:
 
 feat: ProductEditViewModel and ProductAddViewModell binding to MainWindow
 
+feat: add ProductAddView
 
 feat: – när du lägger till en ny funktionalitet
 fix: – när du rättar ett fel

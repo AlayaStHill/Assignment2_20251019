@@ -76,10 +76,10 @@ public partial class ProductListViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void Edit(Product product)
+    private void Edit(Product selectedProduct)
     { 
         // konfigurera ProductEditViewModel med metoden SetProduct(product) innan ProductEditView visas. 
-        _viewNavigationService.NavigateTo<ProductEditViewModel>(viewmodel => viewmodel.SetProduct(product));
+        _viewNavigationService.NavigateTo<ProductEditViewModel>(viewmodel => viewmodel.SetProduct(selectedProduct));
 
     }
 
