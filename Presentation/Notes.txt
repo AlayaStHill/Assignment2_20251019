@@ -25,8 +25,8 @@ public async Task<ProductServiceResult<Product>> SaveProductAsync(Product produc
 
 ---------------------------------------------------------------
 Branchen: 
-refactor: ProductListView Delete-method
-refactor: ProductListView PopulateProductListAsync-method
+feat: add NavigateToAsync-method to ViewNavigationService
+feat: add navigation to ProductListView in ProductListView Save-method
 
 
 
@@ -55,8 +55,8 @@ refactor: repository restructuring and ProductService update
 
 ATT GÖRA:
 --------------
-cancellatiiontoken viewmodels? 
-
+använd konsekvent if (!result) i metoderna
+bryt ut och skapa hjälpmetoder för att korta ned metoder
 
 
 

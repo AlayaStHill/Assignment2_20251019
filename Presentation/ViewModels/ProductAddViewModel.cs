@@ -1,4 +1,5 @@
-﻿using ApplicationLayer.Interfaces;
+﻿using ApplicationLayer.DTOs;
+using ApplicationLayer.Interfaces;
 using ApplicationLayer.Results;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -20,7 +21,7 @@ public partial class ProductAddViewModel : ObservableObject
     }
 
     [ObservableProperty]
-    private Product _productData = new();
+    private ProductCreateRequest _productData = new();
 
     [ObservableProperty]
     private string _title = "Ny Produkt";
@@ -32,11 +33,11 @@ public partial class ProductAddViewModel : ObservableObject
     private string _statusColor;
 
     [RelayCommand]
-    private async Task Save()
+    private async Task Save() 
     {
         try
         {
-            if (ProductData is null)
+            if (ProductData is null) // namn och pris är null!, fångar detta?
             {
                 StatusMessage = "Inga uppgifter att spara.";
                 StatusColor = "Red";
@@ -56,6 +57,8 @@ public partial class ProductAddViewModel : ObservableObject
             // Om allt gick bra
             StatusMessage = "Produkten har sparats.";
             StatusColor = "Green";
+
+            await _viewNavigationService.NavigateToAsync<ProductListViewModel>(viewmodel => viewmodel.PopulateProductListAsync());
         }
         catch (Exception ex)
         {
@@ -67,6 +70,7 @@ public partial class ProductAddViewModel : ObservableObject
     [RelayCommand]
     private void Cancel()
     {
+
 
     }
 }

@@ -20,10 +20,22 @@ public class ViewNavigationService : IViewNavigationService
     {
         // Hämta ViewModel från DI-containern
         TViewModel viewModel = _serviceProvider.GetRequiredService<TViewModel>();
+
         // eventuell konfiguration
         configure?.Invoke(viewModel);
 
         // Byt aktiv vy i MainViewModel
+        _mainViewModel.CurrentViewModel = viewModel;
+    }
+
+    // Func<TViewModel, Task> = en funktion som tar en parameter av typen TViewModel och returnerar en Task (alltså en asynkron operation)
+    public async Task NavigateToAsync<TViewModel>(Func<TViewModel, Task>? configure = null) where TViewModel : ObservableObject
+    {
+        TViewModel viewModel = _serviceProvider.GetRequiredService<TViewModel>();
+
+        if (configure is not null)
+            await configure(viewModel);
+
         _mainViewModel.CurrentViewModel = viewModel;
     }
 }

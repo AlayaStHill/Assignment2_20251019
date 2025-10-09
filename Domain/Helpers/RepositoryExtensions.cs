@@ -7,9 +7,12 @@ public static class RepositoryExtensions
 {
     // Försök hämta annars skapa en ny
     public static async Task<RepositoryResult<T>> GetOrCreateAsync<T>(
-        this IRepository<T> repository, // gör metoden till en extension-metod för alla objekt som implementerar IRepository<T>. Det objekt som anropar, ex. _categoryRepository, blir parametern repository inne i metoden.
-        Func<T, bool> isMatch, // Func<T, bool>, för att kunna skicka in ett villkor (lambda-uttryck) som varje objekt i samlingen ska kontrolleras mot. isMatch(objekt) för att hitta en befintlig
-        Func<T> createEntity, // skapar en ny om ingen hittas
+        // gör metoden till en extension-metod för alla objekt som implementerar IRepository<T>. Det objekt som anropar, ex. _categoryRepository, blir parametern repository inne i metoden.
+        this IRepository<T> repository,
+        // Func<T, bool>, för att kunna skicka in ett villkor (lambda-uttryck) som varje objekt i samlingen ska kontrolleras mot. isMatch(objekt) för att hitta en befintlig
+        Func<T, bool> isMatch,
+        // skapar en ny om ingen hittas
+        Func<T> createEntity, 
         CancellationToken cancellationToken)
         where T : class
     {

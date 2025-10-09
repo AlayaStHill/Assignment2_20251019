@@ -38,7 +38,7 @@ public partial class ProductListViewModel : ObservableObject
     [ObservableProperty]
     private string? _statusColor;
 
-    private async Task PopulateProductListAsync()
+    public async Task PopulateProductListAsync()
     {
         ServiceResult<IEnumerable<Product>> loadResult = await _productService.GetProductsAsync();
         // loadresult är inte null, returnerar alltid ett nytt ServiceResult-objekt i GetProducts
