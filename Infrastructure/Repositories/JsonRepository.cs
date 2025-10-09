@@ -2,7 +2,7 @@
 using Domain.Results;
 using System.Text.Json;
 
-namespace Infrastructure.Repositories; // helpers, extensionmethods testas, id visas i listvyn eller editvyn
+namespace Infrastructure.Repositories; 
 
 public class JsonRepository<T> : IRepository<T> where T : class
 {
@@ -45,14 +45,6 @@ public class JsonRepository<T> : IRepository<T> where T : class
             EnsureInitialized(_dataDirectory, _filePath);  
 
             string json = await File.ReadAllTextAsync(_filePath, cancellationToken);
-            //// Om det är giltig text klarar denna koll, men inte giltig json att deserialisera fångas upp i catch
-            //if (string.IsNullOrWhiteSpace(json))
-            //{
-            //    return RepositoryResult<IEnumerable<T>>.InternalServerError("Filen innehöll inget giltigt JSON-format.");
-            //    // returnera en tom lista, inte ses som fel??
-            //}
-            ////await File.WriteAllTextAsync(_filePath, "[]", cancellationToken);
-            ////return RepositoryResult<IEnumerable<T>>.OK([]);
 
             List<T>? entities = JsonSerializer.Deserialize<List<T>>(json, _jsonOptions);
             return RepositoryResult<IEnumerable<T>>.OK(entities ?? []);

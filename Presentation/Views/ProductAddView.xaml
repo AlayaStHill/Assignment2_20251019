@@ -19,9 +19,9 @@
             <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="{Binding StatusMessage}" Foreground="{Binding StatusColor}" TextWrapping="Wrap" />
+        <TextBlock Grid.Row="0" Text="{Binding StatusMessage}" Foreground="{Binding StatusColor}" Margin="10" TextWrapping="Wrap" />
 
-        <TextBlock Grid.Row="1" VerticalAlignment="Center" Text="{Binding Title, FallbackValue=Ny Produkt}" FontWeight="Bold" FontSize="18" Margin="20 20 20 20" />
+        <TextBlock Grid.Row="1" VerticalAlignment="Center" Text="{Binding Title, FallbackValue=Ny Produkt}" FontWeight="Bold" FontSize="18" Margin="20 0 20 20" />
        
         <StackPanel Grid.Row="2">
             <StackPanel Margin="20 0 0 10">

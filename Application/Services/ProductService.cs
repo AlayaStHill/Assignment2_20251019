@@ -133,7 +133,7 @@ public class ProductService(IRepository<Product> productRepository, IRepository<
             // Typen är redan specificerad i fältet. Här kommer en ny tilldelning bara. Deklarerar jag typen frånkopplar jag den från fältet och skapar en ny lokal variabel. Skapar en ny instans för att säkerställa en ny nollställd _cts utan pågående cancellation. 
             _cts = new CancellationTokenSource();
 
-            if (string.IsNullOrWhiteSpace(productCreateRequest.Name) || productCreateRequest.Price <= 0)
+            if (string.IsNullOrWhiteSpace(productCreateRequest.Name) || productCreateRequest.Price < 0)
                 return new ServiceResult<Product> { Succeeded = false, StatusCode = 400, ErrorMessage = "Produktfälten är inte korrekt ifyllda." };
 
 

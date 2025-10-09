@@ -27,10 +27,11 @@ public async Task<ProductServiceResult<Product>> SaveProductAsync(Product produc
 Branchen: 
 refactor: Save-method in ProductAddViewModel
 
-fix: remove nullcheck in JsonRepository ReadAsync-method
-feat: add null-, and whitespace-check to JsonRepository EnsureInitialized-method
-feat: add EnsureInitialized to JsonRepository ReadAsync
-fix: remove Data-catalog from Infrastructure
+
+fix: TextBlock Grid-column alignment
+
+
+
 
 feat: – när du lägger till en ny funktionalitet
 fix: – när du rättar ett fel
@@ -57,6 +58,7 @@ refactor: repository restructuring and ProductService update
 
 ATT GÖRA:
 --------------
+Ta bort ketgori och tillverkare från ny AddView
 använd konsekvent if (!result) i metoderna
 bryt ut och skapa hjälpmetoder för att korta ned metoder
 
@@ -99,3 +101,11 @@ Presentation =	 UI/MVVM (hur användaren interagerar). Project Reference: Domain 
 xUnit:
 kopiera interface + metoder i productservice. samma med fileservice och Ifileservice - detta ska testas
 extensionmethods + helpers men inte readasync i filerepository
+// helpers, extensionmethods testas, id visas i listvyn eller editvyn
+
+
+Repository: tekniskt skydd (filåtkomst, skrivfel)
+
+Service: affärslogiskt skydd (t.ex. “produkt finns redan”)
+
+ViewModel: användarskydd (UI’t kraschar inte)

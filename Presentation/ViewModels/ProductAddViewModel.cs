@@ -1,6 +1,7 @@
 ﻿using ApplicationLayer.DTOs;
 using ApplicationLayer.Interfaces;
 using ApplicationLayer.Results;
+using ApplicationLayer.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Domain.Entities;
@@ -36,11 +37,11 @@ public partial class ProductAddViewModel : ObservableObject
     {
         try
         {
-            // (defense in depth), validering görs i productservice, men för att förhindra onödiga serviceanrop - hoppa ur metoden direkt här och ge användaren feedback utan möjlig fördröjning.
-            if (string.IsNullOrWhiteSpace(ProductData?.Name) || ProductData.Price <= 0)
+            // Defense in depth: även om ProductService validerar fälten, en snabb kontroll här för att ge direkt feedback till användaren,  utan onödigt anrop till fil. 
+            if (string.IsNullOrWhiteSpace(ProductData.Name) || ProductData.Price < 0)
             {
                 StatusMessage = "Fälten namn och pris är inte korrekt ifyllda.";
-                StatusColor = "Red";
+                StatusColor = "red";
                 return;
             }
 
@@ -50,7 +51,7 @@ public partial class ProductAddViewModel : ObservableObject
             if (!saveResult.Succeeded)
             {
                 StatusMessage = saveResult.ErrorMessage ?? "Produkten kunde inte sparas.";
-                StatusColor = "Red";
+                StatusColor = "red";
                 return;
             }
 
@@ -58,12 +59,15 @@ public partial class ProductAddViewModel : ObservableObject
             StatusMessage = "Produkten har sparats.";
             StatusColor = "Green";
 
+            // Användaren hinner se statusmeddelandet
+            await Task.Delay(1000);
+
             await _viewNavigationService.NavigateToAsync<ProductListViewModel>(viewmodel => viewmodel.PopulateProductListAsync());
         }
         catch (Exception ex)
         {
             StatusMessage = $"Ett oväntat fel uppstod: {ex.Message}";
-            StatusColor = "Red";
+            StatusColor = "red";
         }
     }
 
@@ -74,6 +78,5 @@ public partial class ProductAddViewModel : ObservableObject
     }
 }
 
-// Lägga till Clear()??
 
 
