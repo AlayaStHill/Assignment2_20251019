@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="Presentation.Views.ProductAddView"
+﻿<UserControl x:Class="Presentation.Views.ProductEditView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:Presentation.Views"
              
              xmlns:viewmodels="clr-namespace:Presentation.ViewModels"
-             d:DataContext="{d:DesignInstance Type=viewmodels:ProductAddViewModel}"
+             d:DataContext="{d:DesignInstance Type=viewmodels:ProductEditViewModel}"
              
              mc:Ignorable="d" 
              Background="LightGray"
@@ -19,27 +19,51 @@
             <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="{Binding StatusMessage, FallbackValue=error}" Foreground="{Binding StatusColor}" TextWrapping="Wrap" />
+        <TextBlock Grid.Row="0" Text="{Binding StatusMessage}" Foreground="{Binding StatusColor}" TextWrapping="Wrap" />
 
-        <TextBlock Grid.Row="1" VerticalAlignment="Center" Text="{Binding Title, FallbackValue=Ny Produkt}" FontWeight="Bold" FontSize="18" Margin="0 0 0 20" />
-       
+        <TextBlock Grid.Row="1" VerticalAlignment="Center" Text="{Binding Title, FallbackValue=Uppdatera produkt}" FontWeight="Bold" FontSize="18" Margin="0 0 0 20" />
+
+        
+        <!--
         <StackPanel Grid.Row="2">
-            <StackPanel Margin="0 0 0 10">
-                <Label Content="Namn" />
-                <TextBox Text="{Binding ProductData.Name}" />
+                <StackPanel>
+                <Label Content="Produkt-ID:" />
+                <TextBlock Text="{Binding ProductData.Id}" Margin="6 0 0 0"/>
             </StackPanel>
 
             <StackPanel Margin="0 0 0 10">
+                <Label Content="Namn" />
+                <TextBox Text="{Binding ProductData.Name}"/>
+            </StackPanel>
+            
+            <StackPanel Margin="0 0 0 10">
                 <Label Content="Pris (SEK)" />
                 <TextBox Text="{Binding ProductData.Price}" />
+            </StackPanel>
+
+            <StackPanel Margin="0 0 0 10">
+                <StackPanel Orientation="Horizontal" >
+                    <Label Content="Kategori" />
+                    <TextBlock Text="(valfri)" Margin="0 5 0 0" Style="{StaticResource MissingValueTextStyle}" />
+                </StackPanel>
+                <TextBox Text="{Binding ProductData.CategoryName}" />
+            </StackPanel>
+
+            <StackPanel Margin="0 0 0 10">
+                <StackPanel Orientation='Horizontal'>
+                    <Label Content="Tillverkare" />
+                    <TextBlock Text="(valfri)" Margin="0 5 0 0" Style="{StaticResource MissingValueTextStyle}" />
+                </StackPanel>
+                <TextBox Text="{Binding ProductData.ManufacturerName}" />
             </StackPanel>
 
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0 10 0 0">
                 <Button Command="{Binding CancelCommand}" Content="Avbryt" Width="70" Height="25" Margin="0,0,10,0" Padding="5 5" Background="LightBlue" FontSize="10" FontWeight="Bold"/>
                 <Button Command="{Binding SaveCommand}" Content="Spara" Width="70" Height="25" Padding="5 5" Background="LightBlue" FontSize="10" FontWeight="Bold"/>
             </StackPanel>
+        
+        
         </StackPanel>
-  
-
+        -->
     </Grid>
 </UserControl>

@@ -25,12 +25,11 @@ public async Task<ProductServiceResult<Product>> SaveProductAsync(Product produc
 
 ---------------------------------------------------------------
 Branchen: 
-refactor: Save-method in ProductAddViewModel
+feat: add ProductEditViewModel-View to MainWindow.xaml
+refactor: remove TextBlock manufacturer and category from ProductAddView. ProductCreateRequest does not support these properties
 
-
-fix: TextBlock Grid-column alignment
-
-
+refactor(ProductEditViewModel): change  SetProduct-method-parameter from Product to ProductUpdateRequest
+refactor(ProductListViewModel): change Edit method param from Product to ProductUpdateRequest
 
 
 feat: – när du lägger till en ny funktionalitet

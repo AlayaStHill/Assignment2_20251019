@@ -19,8 +19,6 @@
     CommandParameter anger vad som ska skickas som argument till den metod som hör ihop med kommandot (Edit). Binding . = hela det aktuella objektet (Product) skickas. Binding.Id = endast produktens Id skickas.
 -->
     
-    
-    
     <UserControl x:Class="Presentation.Views.ProductListView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"

@@ -1,4 +1,5 @@
-﻿using ApplicationLayer.Interfaces;
+﻿using ApplicationLayer.DTOs;
+using ApplicationLayer.Interfaces;
 using ApplicationLayer.Results;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -75,9 +76,18 @@ public partial class ProductListViewModel : ObservableObject
 
     [RelayCommand]
     private void Edit(Product selectedProduct)
-    { 
+    {
+        ProductUpdateRequest dto = new ProductUpdateRequest
+        {
+            Id = selectedProduct.Id,
+            Name = selectedProduct.Name,
+            Price = selectedProduct.Price,
+            CategoryName = selectedProduct.Category?.Name,
+            ManufacturerName = selectedProduct.Manufacturer?.Name
+        };
+
         // konfigurera ProductEditViewModel med metoden SetProduct(product) innan ProductEditView visas. 
-        _viewNavigationService.NavigateTo<ProductEditViewModel>(viewmodel => viewmodel.SetProduct(selectedProduct));
+        _viewNavigationService.NavigateTo<ProductEditViewModel>(viewmodel => viewmodel.SetProduct(dto));
     }
 
     [RelayCommand] 
