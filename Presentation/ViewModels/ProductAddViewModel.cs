@@ -36,19 +36,32 @@ public partial class ProductAddViewModel : ObservableObject
     {
         try
         {
+            if (ProductData is null)
+            {
+                StatusMessage = "Inga uppgifter att spara.";
+                StatusColor = "Red";
+                return;
+            }
 
-        }
-        if (ProductData is not null)
-        {
+
             ServiceResult<Product> saveResult = await _productService.SaveProductAsync(ProductData);
+
             if (!saveResult.Succeeded)
             {
                 StatusMessage = saveResult.ErrorMessage ?? "Produkten kunde inte sparas.";
                 StatusColor = "Red";
-                return; // ???? hoppar utr metoden om något gich fel. Behövs bara om det finns mer kod 
+                return;
             }
-        }
 
+            // Om allt gick bra
+            StatusMessage = "Produkten har sparats.";
+            StatusColor = "Green";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Ett oväntat fel uppstod: {ex.Message}";
+            StatusColor = "Red";
+        }
     }
 
     [RelayCommand]

@@ -48,7 +48,6 @@ public partial class ProductListViewModel : ObservableObject
             StatusColor = "red";
             return;
         }
-       
         // Data från fil kan vara null (inget alls) eller tom (listan innehåller inga element)
         ProductList = new ObservableCollection<Product>(loadResult.Data ?? []);
     }
