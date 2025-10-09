@@ -25,10 +25,8 @@ public async Task<ProductServiceResult<Product>> SaveProductAsync(Product produc
 
 ---------------------------------------------------------------
 Branchen: 
-feature ProductAddView
-
-
-refactor: remove Style.Trigger from Textblock GlobalStyle-resource
+refactor: ProductListView Delete-method
+refactor: ProductListView PopulateProductListAsync-method
 
 
 

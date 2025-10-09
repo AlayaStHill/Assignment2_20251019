@@ -1,8 +1,10 @@
 ﻿using ApplicationLayer.Interfaces;
+using ApplicationLayer.Results;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Domain.Entities;
 using Presentation.Interfaces;
+using System.Windows.Controls.Primitives;
 
 namespace Presentation.ViewModels;
 
@@ -30,8 +32,22 @@ public partial class ProductAddViewModel : ObservableObject
     private string _statusColor;
 
     [RelayCommand]
-    private void Save()
+    private async Task Save()
     {
+        try
+        {
+
+        }
+        if (ProductData is not null)
+        {
+            ServiceResult<Product> saveResult = await _productService.SaveProductAsync(ProductData);
+            if (!saveResult.Succeeded)
+            {
+                StatusMessage = saveResult.ErrorMessage ?? "Produkten kunde inte sparas.";
+                StatusColor = "Red";
+                return; // ???? hoppar utr metoden om något gich fel. Behövs bara om det finns mer kod 
+            }
+        }
 
     }
 

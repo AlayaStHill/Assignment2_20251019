@@ -42,16 +42,15 @@ public partial class ProductListViewModel : ObservableObject
     {
         ServiceResult<IEnumerable<Product>> loadResult = await _productService.GetProductsAsync();
         // loadresult är inte null, returnerar alltid ett nytt ServiceResult-objekt i GetProducts
-        if (loadResult.Succeeded)
+        if (!loadResult.Succeeded)
         {
-            // Data från fil kan vara null (inget alls) eller tom (listan innehåller inga element)
-            ProductList = new ObservableCollection<Product>(loadResult.Data ?? []);
-        }
-        else
-        {
-            StatusMessage = loadResult!.ErrorMessage ?? "Kunde inte hämta produkterna. Försök igen senare."; 
+            StatusMessage = loadResult!.ErrorMessage ?? "Kunde inte hämta produkterna. Försök igen senare.";
             StatusColor = "red";
+            return;
         }
+       
+        // Data från fil kan vara null (inget alls) eller tom (listan innehåller inga element)
+        ProductList = new ObservableCollection<Product>(loadResult.Data ?? []);
     }
 
     // mellanlager, ansvarsseparation. styr när laddning sker, fångar tekniska/oförutsedda fel
@@ -89,18 +88,17 @@ public partial class ProductListViewModel : ObservableObject
         try // Pratar med fil -> try-catch fånga oförutsedda tekniska fel
         {
             ServiceResult deleteResult = await _productService.DeleteProductAsync(productId); 
-            if (deleteResult.Succeeded)
-            {
-                await PopulateProductListAsync();
-
-                StatusMessage = "Produkten har tagits bort";
-                StatusColor = "green";
-            }
-            else
+            if (!deleteResult.Succeeded)
             {
                 StatusMessage = deleteResult.ErrorMessage ?? "Kunde inte ta bort produkten";
                 StatusColor = "red";
+                return; // Metoden avbryts om något gick fel, istället för att fortsätta på nästa rad
             }
+
+            await PopulateProductListAsync();
+
+            StatusMessage = "Produkten har tagits bort";
+            StatusColor = "green";
         }
         catch (Exception ex)
         {
