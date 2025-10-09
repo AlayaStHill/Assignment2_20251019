@@ -5,7 +5,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Domain.Entities;
 using Presentation.Interfaces;
-using System.Windows.Controls.Primitives;
 
 namespace Presentation.ViewModels;
 
@@ -27,19 +26,20 @@ public partial class ProductAddViewModel : ObservableObject
     private string _title = "Ny Produkt";
 
     [ObservableProperty]
-    private string _statusMessage;
+    private string? _statusMessage;
 
     [ObservableProperty]
-    private string _statusColor;
+    private string? _statusColor;
 
     [RelayCommand]
     private async Task Save() 
     {
         try
         {
-            if (ProductData is null) // namn och pris är null!, fångar detta?
+            // (defense in depth), validering görs i productservice, men för att förhindra onödiga serviceanrop - hoppa ur metoden direkt här och ge användaren feedback utan möjlig fördröjning.
+            if (string.IsNullOrWhiteSpace(ProductData?.Name) || ProductData.Price <= 0)
             {
-                StatusMessage = "Inga uppgifter att spara.";
+                StatusMessage = "Fälten namn och pris är inte korrekt ifyllda.";
                 StatusColor = "Red";
                 return;
             }
@@ -70,9 +70,10 @@ public partial class ProductAddViewModel : ObservableObject
     [RelayCommand]
     private void Cancel()
     {
-
-
+        _viewNavigationService.NavigateTo<ProductListViewModel>();
     }
 }
 
 // Lägga till Clear()??
+
+
