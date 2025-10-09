@@ -27,7 +27,10 @@ public async Task<ProductServiceResult<Product>> SaveProductAsync(Product produc
 Branchen: 
 refactor: Save-method in ProductAddViewModel
 
-
+fix: remove nullcheck in JsonRepository ReadAsync-method
+feat: add null-, and whitespace-check to JsonRepository EnsureInitialized-method
+feat: add EnsureInitialized to JsonRepository ReadAsync
+fix: remove Data-catalog from Infrastructure
 
 feat: – när du lägger till en ny funktionalitet
 fix: – när du rättar ett fel
@@ -89,3 +92,10 @@ Domain =		 Entities och Interfaces (vad systemet är). Kataloger: Project Referen
 Application =	 Use cases och affärslogik (vad systemet gör). Project Reference: Domain
 Infrastructure = Repositories och teknik (hur systemet lagrar data). Project Reference: Domain
 Presentation =	 UI/MVVM (hur användaren interagerar). Project Reference: Domain (Composition Root - DI-container)
+
+
+
+
+xUnit:
+kopiera interface + metoder i productservice. samma med fileservice och Ifileservice - detta ska testas
+extensionmethods + helpers men inte readasync i filerepository

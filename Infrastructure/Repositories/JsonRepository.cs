@@ -2,7 +2,7 @@
 using Domain.Results;
 using System.Text.Json;
 
-namespace Infrastructure.Repositories;
+namespace Infrastructure.Repositories; // helpers, extensionmethods testas, id visas i listvyn eller editvyn
 
 public class JsonRepository<T> : IRepository<T> where T : class
 {
@@ -24,14 +24,17 @@ public class JsonRepository<T> : IRepository<T> where T : class
     public static void EnsureInitialized(string dataDirectory, string filePath)
     {
         if (!Directory.Exists(dataDirectory))
-        {
             Directory.CreateDirectory(dataDirectory);
-        }
+
+
         if (!File.Exists(filePath))
-        {
             // Om inte filen products.json finns på den angivna filsökvägen, skapa den och skriv in en tom lista i json-format
             File.WriteAllText(filePath, "[]");
-        }
+
+        // Om filen finns men är tom/whitespace, initiera den till en tom lista
+        string existing = File.ReadAllText(filePath);
+        if (string.IsNullOrWhiteSpace(existing))
+            File.WriteAllText(filePath, "[]");
     }
 
     // CancellationToken cancellationToken här är kopplad till CancellationTokenSourse i ProductService, varifrån dessa metoder kan avbrytas
@@ -39,14 +42,17 @@ public class JsonRepository<T> : IRepository<T> where T : class
     {
         try
         {
+            EnsureInitialized(_dataDirectory, _filePath);  
 
             string json = await File.ReadAllTextAsync(_filePath, cancellationToken);
-            // Om det är giltig text klarar denna koll, men inte giltig json att deserialisera fångas upp i catch
-            if (string.IsNullOrWhiteSpace(json))
-            {
-                return RepositoryResult<IEnumerable<T>>.InternalServerError("Filen innehöll inget giltigt JSON-format.");
-            }
-
+            //// Om det är giltig text klarar denna koll, men inte giltig json att deserialisera fångas upp i catch
+            //if (string.IsNullOrWhiteSpace(json))
+            //{
+            //    return RepositoryResult<IEnumerable<T>>.InternalServerError("Filen innehöll inget giltigt JSON-format.");
+            //    // returnera en tom lista, inte ses som fel??
+            //}
+            ////await File.WriteAllTextAsync(_filePath, "[]", cancellationToken);
+            ////return RepositoryResult<IEnumerable<T>>.OK([]);
 
             List<T>? entities = JsonSerializer.Deserialize<List<T>>(json, _jsonOptions);
             return RepositoryResult<IEnumerable<T>>.OK(entities ?? []);
@@ -57,7 +63,8 @@ public class JsonRepository<T> : IRepository<T> where T : class
             // Om JSON är ogiltig, återställ filen till en giltig tom lista
             await File.WriteAllTextAsync(_filePath, "[]", cancellationToken);
 
-            return RepositoryResult<IEnumerable<T>>.InternalServerError($"Ogiltig JSON: {ex.Message}");
+            return RepositoryResult<IEnumerable<T>>.InternalServerError($"Ogiltig JSON: {ex.Message}"); 
+
         }
     }
 
@@ -66,7 +73,8 @@ public class JsonRepository<T> : IRepository<T> where T : class
         try
         {
             string json = JsonSerializer.Serialize(entities, _jsonOptions);
-            await File.WriteAllTextAsync(_filePath, json, cancellationToken); // fungerar med små filer. Stream tar bara 100 första delar upp stora filen i olika portioner effektivare- för systemet lättare med flera småbitar, kan deka ut i processorn i flera olika trådar istället för en enda stor tråd.
+            // fungerar med små filer. Stream tar bara 100 första delar upp stora filen i olika portioner effektivare- för systemet lättare med flera småbitar, kan deka ut i processorn i flera olika trådar istället för en enda stor tråd.
+            await File.WriteAllTextAsync(_filePath, json, cancellationToken); 
 
             return RepositoryResult.NoContent();
 

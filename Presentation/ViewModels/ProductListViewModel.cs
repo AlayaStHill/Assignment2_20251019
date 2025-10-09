@@ -81,7 +81,7 @@ public partial class ProductListViewModel : ObservableObject
     }
 
     [RelayCommand] 
-    private async Task Delete(string productId)
+    private async Task Delete(string productId) // Ska det se ut såhär eller inte???
     {
         try // Pratar med fil -> try-catch fånga oförutsedda tekniska fel
         {
