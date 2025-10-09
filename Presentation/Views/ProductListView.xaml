@@ -56,7 +56,7 @@
         </Grid>
         
         <!-- Produktlista -->
-        <ListView Grid.Row="3"  Grid.IsSharedSizeScope="True" ItemsSource="{Binding ProductList}" HorizontalContentAlignment="Stretch">
+        <ListView Grid.Row="2"  Grid.IsSharedSizeScope="True" ItemsSource="{Binding ProductList}" HorizontalContentAlignment="Stretch">
             <ListView.ItemTemplate>
                 <DataTemplate DataType="x:Type entities:Product">
                     <Grid>

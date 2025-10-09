@@ -40,7 +40,7 @@ namespace Presentation
                     services.AddScoped<ProductListView>();
 
                     services.AddTransient<ProductAddViewModel>();
-                    //services.AddTransient<ProductAddView>();
+                    services.AddTransient<ProductAddView>();
 
                     services.AddScoped<ProductEditViewModel>();
                     //services.AddScoped<ProductEditView>();
