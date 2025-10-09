@@ -42,7 +42,7 @@
             <RowDefinition Height="*" /> <!-- Produktlistan -->
         </Grid.RowDefinitions>
         <!-- Felmeddelande -->
-        <TextBlock Grid.Row="0" Text="{Binding StatusMessage}" Margin="0 0 0 0" Foreground="{Binding StatusColor}" TextWrapping="Wrap" />
+        <TextBlock Grid.Row="0" Text="{Binding StatusMessage}" Foreground="{Binding StatusColor}" TextWrapping="Wrap" />
 
         <!-- Titel, ny-produkt-knapp-->
         <Grid Grid.Row="1" >

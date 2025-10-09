@@ -3,12 +3,8 @@
 
     <!-- Stil för "Ej inlagd"-text -->
     <Style x:Key="MissingValueTextStyle" TargetType="TextBlock">
-        <Style.Triggers>
-            <Trigger Property="Text" Value="Ej inlagd">
-                <Setter Property="Foreground" Value="Gray" />
-                <Setter Property="FontStyle" Value="Italic" />
-            </Trigger>
-        </Style.Triggers>
+        <Setter Property="Foreground" Value="Gray" />
+        <Setter Property="FontStyle" Value="Italic" />
     </Style>
 
 </ResourceDictionary>

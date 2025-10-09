@@ -1,5 +1,6 @@
 ﻿using ApplicationLayer.Interfaces;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Domain.Entities;
 using Presentation.Interfaces;
 
@@ -28,13 +29,17 @@ public partial class ProductAddViewModel : ObservableObject
     [ObservableProperty]
     private string _statusColor;
 
+    [RelayCommand]
     private void Save()
     {
 
     }
 
+    [RelayCommand]
     private void Cancel()
     {
 
     }
 }
+
+// Lägga till Clear()??
