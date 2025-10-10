@@ -3,7 +3,6 @@ using ApplicationLayer.Interfaces;
 using ApplicationLayer.Results;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Domain.Entities;
 using Presentation.Interfaces;
 
 

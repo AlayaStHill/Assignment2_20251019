@@ -25,7 +25,8 @@ public async Task<ProductServiceResult<Product>> SaveProductAsync(Product produc
 
 ---------------------------------------------------------------
 Branchen: 
-feat(ProductEditViewModel): add Save-, and Cancel-method 
+fix(RepositoryResult): assign Data in Created() to prevent null results
+fix(repository): write created entities to file in GetOrCreateAsync
 
 feat: add FormViewModelBase to minimera upprepad kod
 

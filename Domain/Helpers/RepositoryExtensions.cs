@@ -18,27 +18,36 @@ public static class RepositoryExtensions
     {
         RepositoryResult<IEnumerable<T>> readResult = await repository.ReadAsync(cancellationToken);
         if (!readResult.Succeeded)
-        {
-            return new RepositoryResult<T>
-            {
-                Succeeded = false,
-                StatusCode = readResult.StatusCode,
-                ErrorMessage = readResult.ErrorMessage,
-                Data = null // något gick fel vid läsning
-            };
-        }
+            return new RepositoryResult<T> { Succeeded = false, StatusCode = readResult.StatusCode, ErrorMessage = readResult.ErrorMessage, Data = null };
+
 
         //Försök hitta en match
         T? entity = readResult.Data!.FirstOrDefault(isMatch);
         // Om match hittas
         if (entity != null)
-        {
             return RepositoryResult<T>.OK(entity);
-        }
 
         // Om ingen match, skapa en ny
         entity = createEntity(); // lambda skickas in i ProductService: () => new Category { Id = ..., Name = ... } tar ingen inparameter = ()
 
+        // Skapa en List för att kunna lägga till 
+        List<T> list = readResult.Data!.ToList();
+        list.Add(entity);
+
+        // Skriv till filen så det blir beständigt. 
+        RepositoryResult writeResult = await repository.WriteAsync(list, cancellationToken);
+        if (!writeResult.Succeeded)
+        {
+            return new RepositoryResult<T>
+            {
+                Succeeded = false,
+                StatusCode = writeResult.StatusCode,
+                ErrorMessage = writeResult.ErrorMessage,
+                Data = null
+            };
+        }
+        
+        // Returnera nyskapat objekt
         return RepositoryResult<T>.Created(entity);
     }
 }
