@@ -16,6 +16,7 @@
         xmlns:viewmodels="clr-namespace:Presentation.ViewModels"
         xmlns:views="clr-namespace:Presentation.Views"
         d:DataContext="{d:DesignInstance Type=viewmodels:MainViewModel}"
+        WindowStartupLocation="CenterScreen"
             
         xmlns:local="clr-namespace:Presentation"
         mc:Ignorable="d"

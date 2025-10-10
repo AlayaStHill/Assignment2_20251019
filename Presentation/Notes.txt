@@ -25,12 +25,9 @@ public async Task<ProductServiceResult<Product>> SaveProductAsync(Product produc
 
 ---------------------------------------------------------------
 Branchen: 
-feat: add ProductEditViewModel-View to MainWindow.xaml
-refactor: remove TextBlock manufacturer and category from ProductAddView. ProductCreateRequest does not support these properties
+feat(ProductEditViewModel): add Save-, and Cancel-method 
 
-refactor(ProductEditViewModel): change  SetProduct-method-parameter from Product to ProductUpdateRequest
-refactor(ProductListViewModel): change Edit method param from Product to ProductUpdateRequest
-
+feat: add FormViewModelBase to minimera upprepad kod
 
 feat: – när du lägger till en ny funktionalitet
 fix: – när du rättar ett fel
@@ -57,9 +54,11 @@ refactor: repository restructuring and ProductService update
 
 ATT GÖRA:
 --------------
-Ta bort ketgori och tillverkare från ny AddView
 använd konsekvent if (!result) i metoderna
 bryt ut och skapa hjälpmetoder för att korta ned metoder
+
+Skapa en FormViewModelBase - cancel och save-metoderna-duplicering.. ärver
+Skapa en StatusViewModelBase alla tre metoder plocka bor statusmeddelanden efter ett tag..ärver
 
 
 

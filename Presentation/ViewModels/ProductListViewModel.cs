@@ -117,6 +117,18 @@ public partial class ProductListViewModel : ObservableObject
     }
 }
 
-// CANCELLATIONTOKEN - hanteras på lägre nivå enbart??
 
-// Ska statusmeddelande förv´svinna efter ett  tag?
+/* 
+Ska statusmeddelande försvinna efter ett  tag?
+
+StatusMessage = "Produkten har tagits bort";
+StatusColor = "green";
+_ = HideStatusSoon(3000);
+
+private async Task HideStatusSoon(int ms = 3000)
+{
+    await Task.Delay(ms);
+    StatusMessage = null;
+    StatusColor = null;
+}
+*/

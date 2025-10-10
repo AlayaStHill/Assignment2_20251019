@@ -25,7 +25,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:Presentation.Views"
-             
+                              
              xmlns:entities="clr-namespace:Domain.Entities;assembly=Domain"
              xmlns:viewmodels="clr-namespace:Presentation.ViewModels"
              d:DataContext="{d:DesignInstance Type=viewmodels:ProductListViewModel}"
@@ -33,57 +33,68 @@
              mc:Ignorable="d" 
              Background="LightGray"
              d:DesignHeight="500" d:DesignWidth="800">
+
     <Grid Margin="20">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="auto" />  <!-- Felmeddelande -->
-            <RowDefinition Height="auto" /> <!-- Titel, ny produkt-knapp -->
-            <RowDefinition Height="*" /> <!-- Produktlistan -->
-        </Grid.RowDefinitions>
-        <!-- Statusmeddelande -->
-        <TextBlock Grid.Row="0" Text="{Binding StatusMessage}" Foreground="{Binding StatusColor}" TextWrapping="Wrap" />
 
-        <!-- Titel, ny-produkt-knapp-->
-        <Grid Grid.Row="1" >
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="auto"/>
-            </Grid.ColumnDefinitions>
-            
-            <TextBlock Grid.Column="0" VerticalAlignment="Center" Text="{Binding Title, FallbackValue=Produktlista}" FontWeight="Bold" FontSize="18" Margin="0 0 0 20" />
-            <Button Grid.Column="1" Command="{Binding NavigateToProductAddViewCommand}" Content="Ny produkt" VerticalAlignment="Center" Margin="0 10 0 0" Padding="5 5" Background="LightBlue" FontSize="10" FontWeight="Bold"/>
+        <Grid x:Name="OriginalGrid" Visibility="Visible">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <!-- Statusmeddelande -->
+            <TextBlock Grid.Row="0" Text="{Binding StatusMessage}" Foreground="{Binding StatusColor}" TextWrapping="Wrap" />
+
+            <!-- Titel, ny-produkt-knapp-->
+            <Grid Grid.Row="1" >
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" VerticalAlignment="Center" Text="{Binding Title, FallbackValue=Produktlista}" FontWeight="Bold" FontSize="18" Margin="0 0 0 20" />
+                <Button Grid.Column="1" Command="{Binding NavigateToProductAddViewCommand}" Content="Ny produkt" VerticalAlignment="Center" Margin="0 10 0 0" Padding="5 5" Background="LightBlue" FontSize="10" FontWeight="Bold"/>
+            </Grid>
+
+            <!-- Produktlista -->
+            <ListView Grid.Row="2"  Grid.IsSharedSizeScope="True" ItemsSource="{Binding ProductList}" HorizontalContentAlignment="Stretch">
+                <ListView.ItemTemplate>
+                    <DataTemplate DataType="x:Type entities:Product">
+                        <Grid Margin="0 3">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition  Width="Auto" SharedSizeGroup="NameColumn" />
+                                <ColumnDefinition  Width="Auto" SharedSizeGroup="PriceColumn" />
+                                <ColumnDefinition  Width="Auto" SharedSizeGroup="CategoryColumn" />
+                                <ColumnDefinition  Width="Auto" SharedSizeGroup="ManufacturerColumn" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Column="0" Text="{Binding Name}" VerticalAlignment="Center" Margin="7 0"/>
+                            <TextBlock Grid.Column="1" Text="{Binding Price}" VerticalAlignment="Center" Margin="7 0" />
+                            <TextBlock Grid.Column="2" Text="{Binding Category.Name, FallbackValue='Ej inlagd', TargetNullValue='Ej inlagd'}" VerticalAlignment="Center" Style="{StaticResource MissingValueTextStyle}" Margin="7 0"/>
+                            <TextBlock Grid.Column="3" Text="{Binding Manufacturer.Name, FallbackValue='Ej inlagd', TargetNullValue='Ej inlagd'}" VerticalAlignment="Center" Style="{StaticResource MissingValueTextStyle}" Margin="7 0"/>
+
+                            <!-- Redigera-, ta bort-knappar -->
+                            <StackPanel Grid.Column="4" Orientation="Horizontal" HorizontalAlignment="Right" >
+                                <Button Content="Redigera" Background="#C9D6DF" Padding="5 5" Margin="0 0 8 0" FontSize="10" CommandParameter="{Binding .}" Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                <Button Content="Ta bort" Background="#F28B82" Padding="5 5" FontSize="10" CommandParameter="{Binding Id}" Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                            </StackPanel>
+
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
+
+
+
+
         </Grid>
-        
-        <!-- Produktlista -->
-        <ListView Grid.Row="2"  Grid.IsSharedSizeScope="True" ItemsSource="{Binding ProductList}" HorizontalContentAlignment="Stretch">
-            <ListView.ItemTemplate>
-                <DataTemplate DataType="x:Type entities:Product">
-                    <Grid Margin="0 3">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition  Width="Auto" SharedSizeGroup="NameColumn" />
-                            <ColumnDefinition  Width="Auto" SharedSizeGroup="PriceColumn" />
-                            <ColumnDefinition  Width="Auto" SharedSizeGroup="CategoryColumn" />
-                            <ColumnDefinition  Width="Auto" SharedSizeGroup="ManufacturerColumn" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
 
-                        <TextBlock Grid.Column="0" Text="{Binding Name}" VerticalAlignment="Center" Margin="7 0"/>
-                        <TextBlock Grid.Column="1" Text="{Binding Price}" VerticalAlignment="Center" Margin="7 0" />
-                        <TextBlock Grid.Column="2" Text="{Binding Category.Name, FallbackValue='Ej inlagd', TargetNullValue='Ej inlagd'}" VerticalAlignment="Center" Style="{StaticResource MissingValueTextStyle}" Margin="7 0"/>
-                        <TextBlock Grid.Column="3" Text="{Binding Manufacturer.Name, FallbackValue='Ej inlagd', TargetNullValue='Ej inlagd'}" VerticalAlignment="Center" Style="{StaticResource MissingValueTextStyle}" Margin="7 0"/>
 
-                        <!-- Redigera-, ta bort-knappar -->
-                        <StackPanel Grid.Column="4" Orientation="Horizontal" HorizontalAlignment="Right" >
-                            <Button Content="Redigera" Background="#C9D6DF" Padding="5 5" Margin="0 0 8 0" FontSize="10" CommandParameter="{Binding .}" Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
-                            <Button Content="Ta bort" Background="#F28B82" Padding="5 5" FontSize="10" CommandParameter="{Binding Id}" Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />  
-                        </StackPanel>
-
-                    </Grid>
-                </DataTemplate>
-            </ListView.ItemTemplate>
-        </ListView>
 
 
 
     </Grid>
 </UserControl>
-
+        
