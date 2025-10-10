@@ -40,7 +40,7 @@ public partial class ProductAddViewModel : ObservableObject
             // Defense in depth: även om ProductService validerar fälten, en snabb kontroll här för att ge direkt feedback till användaren,  utan onödigt anrop till fil. 
             if (string.IsNullOrWhiteSpace(ProductData.Name) || ProductData.Price < 0)
             {
-                StatusMessage = "Fälten namn och pris är inte korrekt ifyllda.";
+                StatusMessage = "Fälten är inte korrekt ifyllda.";
                 StatusColor = "red";
                 return;
             }

@@ -25,13 +25,10 @@ public async Task<ProductServiceResult<Product>> SaveProductAsync(Product produc
 
 ---------------------------------------------------------------
 Branchen: 
-refactor: Save-method in ProductAddViewModel
+fix(RepositoryResult): assign Data in Created() to prevent null results
+fix(repository): write created entities to file in GetOrCreateAsync
 
-
-fix: TextBlock Grid-column alignment
-
-
-
+feat: add FormViewModelBase to minimera upprepad kod
 
 feat: – när du lägger till en ny funktionalitet
 fix: – när du rättar ett fel
@@ -58,9 +55,11 @@ refactor: repository restructuring and ProductService update
 
 ATT GÖRA:
 --------------
-Ta bort ketgori och tillverkare från ny AddView
 använd konsekvent if (!result) i metoderna
 bryt ut och skapa hjälpmetoder för att korta ned metoder
+
+Skapa en FormViewModelBase - cancel och save-metoderna-duplicering.. ärver
+Skapa en StatusViewModelBase alla tre metoder plocka bor statusmeddelanden efter ett tag..ärver
 
 
 

@@ -1,4 +1,5 @@
-﻿using ApplicationLayer.Interfaces;
+﻿using ApplicationLayer.DTOs;
+using ApplicationLayer.Interfaces;
 using ApplicationLayer.Results;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -75,9 +76,18 @@ public partial class ProductListViewModel : ObservableObject
 
     [RelayCommand]
     private void Edit(Product selectedProduct)
-    { 
+    {
+        ProductUpdateRequest dto = new ProductUpdateRequest
+        {
+            Id = selectedProduct.Id,
+            Name = selectedProduct.Name,
+            Price = selectedProduct.Price,
+            CategoryName = selectedProduct.Category?.Name,
+            ManufacturerName = selectedProduct.Manufacturer?.Name
+        };
+
         // konfigurera ProductEditViewModel med metoden SetProduct(product) innan ProductEditView visas. 
-        _viewNavigationService.NavigateTo<ProductEditViewModel>(viewmodel => viewmodel.SetProduct(selectedProduct));
+        _viewNavigationService.NavigateTo<ProductEditViewModel>(viewmodel => viewmodel.SetProduct(dto));
     }
 
     [RelayCommand] 
@@ -107,6 +117,18 @@ public partial class ProductListViewModel : ObservableObject
     }
 }
 
-// CANCELLATIONTOKEN - hanteras på lägre nivå enbart??
 
-// Ska statusmeddelande förv´svinna efter ett  tag?
+/* 
+Ska statusmeddelande försvinna efter ett  tag?
+
+StatusMessage = "Produkten har tagits bort";
+StatusColor = "green";
+_ = HideStatusSoon(3000);
+
+private async Task HideStatusSoon(int ms = 3000)
+{
+    await Task.Delay(ms);
+    StatusMessage = null;
+    StatusColor = null;
+}
+*/

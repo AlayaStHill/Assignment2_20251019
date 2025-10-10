@@ -35,6 +35,18 @@ public class JsonRepository<T> : IRepository<T> where T : class
         string existing = File.ReadAllText(filePath);
         if (string.IsNullOrWhiteSpace(existing))
             File.WriteAllText(filePath, "[]");
+
+
+        // Nytt: validera att filen verkligen är en JSON-lista för T
+        try
+        {
+            JsonSerializer.Deserialize<List<T>>(existing, _jsonOptions);
+        }
+        catch (JsonException)
+        {
+            // Om ogiltig -> skriv tom lista så kommande ReadAsync inte kastar
+            File.WriteAllText(filePath, "[]");
+        }
     }
 
     // CancellationToken cancellationToken här är kopplad till CancellationTokenSourse i ProductService, varifrån dessa metoder kan avbrytas
@@ -46,6 +58,9 @@ public class JsonRepository<T> : IRepository<T> where T : class
 
             string json = await File.ReadAllTextAsync(_filePath, cancellationToken);
 
+            System.Diagnostics.Debug.WriteLine($"[{typeof(T).Name}] Läser fil: {_filePath}");
+            System.Diagnostics.Debug.WriteLine($"Innehåll i filen: {json}");
+
             List<T>? entities = JsonSerializer.Deserialize<List<T>>(json, _jsonOptions);
             return RepositoryResult<IEnumerable<T>>.OK(entities ?? []);
 
@@ -55,7 +70,7 @@ public class JsonRepository<T> : IRepository<T> where T : class
             // Om JSON är ogiltig, återställ filen till en giltig tom lista
             await File.WriteAllTextAsync(_filePath, "[]", cancellationToken);
 
-            return RepositoryResult<IEnumerable<T>>.InternalServerError($"Ogiltig JSON: {ex.Message}"); 
+            return RepositoryResult<IEnumerable<T>>.InternalServerError($"Ogiltig JSON i {_filePath}: {ex.Message}"); 
 
         }
     }

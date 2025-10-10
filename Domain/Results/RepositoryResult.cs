@@ -59,6 +59,7 @@ public class RepositoryResult<T> : RepositoryResult
         {
             Succeeded = true,
             StatusCode = 201,
+            Data = data 
         };
     }
 
