@@ -6,6 +6,7 @@ using ApplicationLayer.DTOs;
 using ApplicationLayer.Interfaces;
 using Domain.Helpers;
 using ApplicationLayer.Factories;
+using ApplicationLayer.Helpers;
 
 namespace ApplicationLayer.Services;
 public class ProductService(IRepository<Product> productRepository, IRepository<Category> categoryRepository, IRepository<Manufacturer> manufacturerRepository) : IProductService
@@ -48,8 +49,7 @@ public class ProductService(IRepository<Product> productRepository, IRepository<
         RepositoryResult<IEnumerable<Product>>? loadResult = await _productRepository.ReadAsync(_cts.Token);
 
         if (!loadResult.Succeeded)
-            return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = loadResult.ErrorMessage ?? "Ett okänt fel inträffade vid filhämtning" };
-
+            return loadResult.MapToServiceResult("Ett okänt fel uppstod vid filhämtning");
 
         _products = [.. (loadResult.Data ?? [])];
         _isLoaded = true;
@@ -82,7 +82,7 @@ public class ProductService(IRepository<Product> productRepository, IRepository<
             RepositoryResult repoSaveResult = await _productRepository.WriteAsync(_products, _cts.Token);
 
             if (!repoSaveResult.Succeeded)
-                return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = repoSaveResult.ErrorMessage ?? "Ett okänt fel inträffade vid filsparning" };
+                return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = repoSaveResult.ErrorMessage ?? "Ett okänt fel uppstod vid filsparning" };
 
             //Operationen lyckades
             return new ServiceResult { Succeeded = true, StatusCode = 204 };

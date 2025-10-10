@@ -21,6 +21,8 @@ public class JsonRepository<T> : IRepository<T> where T : class
         EnsureInitialized(_dataDirectory, _filePath);
     }
 
+
+
     public static void EnsureInitialized(string dataDirectory, string filePath)
     {
         if (!Directory.Exists(dataDirectory))
@@ -35,19 +37,9 @@ public class JsonRepository<T> : IRepository<T> where T : class
         string existing = File.ReadAllText(filePath);
         if (string.IsNullOrWhiteSpace(existing))
             File.WriteAllText(filePath, "[]");
-
-
-        // Nytt: validera att filen verkligen är en JSON-lista för T
-        try
-        {
-            JsonSerializer.Deserialize<List<T>>(existing, _jsonOptions);
-        }
-        catch (JsonException)
-        {
-            // Om ogiltig -> skriv tom lista så kommande ReadAsync inte kastar
-            File.WriteAllText(filePath, "[]");
-        }
     }
+
+
 
     // CancellationToken cancellationToken här är kopplad till CancellationTokenSourse i ProductService, varifrån dessa metoder kan avbrytas
     public async Task<RepositoryResult<IEnumerable<T>>> ReadAsync(CancellationToken cancellationToken)
@@ -58,12 +50,8 @@ public class JsonRepository<T> : IRepository<T> where T : class
 
             string json = await File.ReadAllTextAsync(_filePath, cancellationToken);
 
-            System.Diagnostics.Debug.WriteLine($"[{typeof(T).Name}] Läser fil: {_filePath}");
-            System.Diagnostics.Debug.WriteLine($"Innehåll i filen: {json}");
-
             List<T>? entities = JsonSerializer.Deserialize<List<T>>(json, _jsonOptions);
             return RepositoryResult<IEnumerable<T>>.OK(entities ?? []);
-
         }
         catch (JsonException ex)
         {
@@ -71,9 +59,10 @@ public class JsonRepository<T> : IRepository<T> where T : class
             await File.WriteAllTextAsync(_filePath, "[]", cancellationToken);
 
             return RepositoryResult<IEnumerable<T>>.InternalServerError($"Ogiltig JSON i {_filePath}: {ex.Message}"); 
-
         }
     }
+
+
 
     public async Task<RepositoryResult> WriteAsync(IEnumerable<T> entities, CancellationToken cancellationToken)
     {

@@ -25,8 +25,6 @@ public async Task<ProductServiceResult<Product>> SaveProductAsync(Product produc
 
 ---------------------------------------------------------------
 Branchen: 
-fix(RepositoryResult): assign Data in Created() to prevent null results
-fix(repository): write created entities to file in GetOrCreateAsync
 
 feat: add FormViewModelBase to minimera upprepad kod
 
@@ -39,16 +37,7 @@ test: – när du lägger till eller ändrar tester
 
 
 ----------------------------------------------------------------------
-refactor: repository restructuring and ProductService update
 
-- Remove GetOrCreateAsync from RepositoryExtensions
-- Remove ProductJsonRepository, CategoryJsonRepository, ManufacturerJsonRepository and corresponding interfaces
-- Add GetEntityAsync-method to JsonRepository
-- Add ExistsAsync-method to RepositoryExtensions
-- Add manufacturer.json and categories.json to Data folder
-- Rename ProductRequest to ProductCreateRequest
-- Update IRepository with GetEntityAsync and ExistsAsync
-- Update ProductService.UpdateProductAsync
 
 
 
@@ -61,10 +50,13 @@ bryt ut och skapa hjälpmetoder för att korta ned metoder
 Skapa en FormViewModelBase - cancel och save-metoderna-duplicering.. ärver
 Skapa en StatusViewModelBase alla tre metoder plocka bor statusmeddelanden efter ett tag..ärver
 
-
-
 Enhetstester xUnit 
 (integrationstest Repository??)
+
+Du har rätt: en för strikt mapper gör att du tappar testbarhet och kontroll.
+Men en flexibel mapper med override låter dig få både:
+enhetlighet i standardfallet
+kontroll när du behöver särskilja fel
 
 
 ??? Senare kan du alltid lägga till cache/minneslager, men just nu kommer det inte göra någon skillnad i din app – bara göra det svårare att förstå vad som händer.

@@ -52,7 +52,6 @@ public partial class ProductEditViewModel(IViewNavigationService viewNavigationS
                 return;
             }
 
-
             ServiceResult saveResult = await _productService.UpdateProductAsync(ProductData);
 
             if (!saveResult.Succeeded)
