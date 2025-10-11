@@ -20,16 +20,6 @@ public class ProductService(IRepository<Product> productRepository, IRepository<
     private CancellationTokenSource _cts = null!;
     private bool _isLoaded;
 
-
-
-    //Read(Get) :
-    //Success = explicit 200 + Data (även tom lista).
-    //Fel = mapper(404/500).
-
-    //Write(Create/Update/Delete) :
-    //Success = explicit (201 vid Create, 204 vid Update/Delete).
-    //Fel = mapper(404/409/500).
-
     public async Task<ServiceResult<Product>> SaveProductAsync(ProductCreateRequest productCreateRequest) // MÅSTE FÅNGA UPP DATA = NULL I MAINWINDOW.XAML.CS 
     {
         try
@@ -43,8 +33,8 @@ public class ProductService(IRepository<Product> productRepository, IRepository<
             ServiceResult ensureResult = await EnsureLoadedAsync();
             if (!ensureResult.Succeeded)
                 return new ServiceResult<Product> { Succeeded = false, StatusCode = 500, ErrorMessage = ensureResult.ErrorMessage, Data = null };
-
-            // Kontrollera om produkten redan finns. Om true = existerar redan
+            
+            // Jämför product.Name med productUpdateRequest.Name tecken för tecken och ignorerar skillnaden mellan stora/små bokstäver, Ordinal jämförelse = jämför bokstävernas nummer i dator (Unicode-värden), inte deras plats i alfabetet som kan skilja sig beroende på språkinställning.
             if (_products.Any(p => p.Name.Equals(productCreateRequest.Name, StringComparison.OrdinalIgnoreCase)))
                 return new ServiceResult<Product> { Succeeded = false, StatusCode = 409, ErrorMessage = $"En produkt med namnet {productCreateRequest.Name} finns redan.", Data = null };
 
@@ -53,14 +43,14 @@ public class ProductService(IRepository<Product> productRepository, IRepository<
 
             RepositoryResult saveResult = await _productRepository.WriteAsync(_products, _cts.Token);
             if (!saveResult.Succeeded)
-                return saveResult.MapToServiceResult<Product>("Kunde inte spara till fil.");
+                return saveResult.MapToServiceResultAs<Product>("Kunde inte spara till fil.");
 
             return new ServiceResult<Product> { Succeeded = true, StatusCode = 201, Data = newProduct };
         }
         catch (Exception ex)
         {
             Cancel();
-
+            // Oväntat fel som uppstått i SaveProductAsync()
             return new ServiceResult<Product> { Succeeded = false, StatusCode = 500, ErrorMessage = $"Det gick inte att spara produkten: {ex.Message}", Data = null };
         }
         finally
@@ -126,21 +116,17 @@ public class ProductService(IRepository<Product> productRepository, IRepository<
             if (string.IsNullOrWhiteSpace(productUpdateRequest.Name) || productUpdateRequest.Price <= 0)
                 return new ServiceResult<Product> { Succeeded = false, StatusCode = 400, ErrorMessage = "Produktfälten namn och pris är inte korrekt ifyllda." };
 
-
             ServiceResult ensureResult = await EnsureLoadedAsync();
             if (!ensureResult.Succeeded)
-                return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = ensureResult.ErrorMessage };
+                return ensureResult;
 
             Product? existingProduct = _products.FirstOrDefault(product => product.Id == productUpdateRequest.Id);
             if (existingProduct == null)
                 return new ServiceResult { Succeeded = false, StatusCode = 404, ErrorMessage = $"Produkten med Id {productUpdateRequest.Id} kunde inte hittas" };
 
-
-            // Jämför product.Name med productUpdateRequest.Name tecken för tecken och ignorerar skillnaden mellan stora/små bokstäver, Ordinal jämförelse = jämför bokstävernas nummer i dator (Unicode-värden), inte deras plats i alfabetet som kan skilja sig beroende på språkinställning.
-            bool productExists = _products.Any(product => product.Name.Equals(productUpdateRequest.Name, StringComparison.OrdinalIgnoreCase) && product.Id != productUpdateRequest.Id);
-            if (productExists)
-                return new ServiceResult { Succeeded = false, StatusCode = 409, ErrorMessage = $"En produkt med namnet {productUpdateRequest.Name} finns redan i systemet." };
-
+            // Kontrollera om produkten redan finns. Om true = existerar redan
+            if (_products.Any(p => p.Name.Equals(productUpdateRequest.Name, StringComparison.OrdinalIgnoreCase) && p.Id != productUpdateRequest.Id))
+                return new ServiceResult { Succeeded = false, StatusCode = 409, ErrorMessage = $"En produkt med namnet {productUpdateRequest.Name} finns redan." };
 
             // Uppdatera produkten
             existingProduct.Name = productUpdateRequest.Name;
@@ -172,7 +158,7 @@ public class ProductService(IRepository<Product> productRepository, IRepository<
 
             RepositoryResult saveResult = await _productRepository.WriteAsync(_products, _cts.Token);
             if (!saveResult.Succeeded)
-                return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = saveResult.ErrorMessage ?? "Ett okänt fel inträffade vid filsparning" };
+                return saveResult.MapToServiceResult("Ett okänt fel inträffade vid filsparning");
 
             // Operationen lyckas
             return new ServiceResult { Succeeded = true, StatusCode = 204 };
@@ -202,19 +188,15 @@ public class ProductService(IRepository<Product> productRepository, IRepository<
                 return ensureResult;
 
             Product? productToDelete = _products.FirstOrDefault(product => product.Id == id);
-
             if (productToDelete == null)
-
                 return new ServiceResult { Succeeded = false, StatusCode = 404, ErrorMessage = $"Produkten med Id {id} kunde inte hittas" };
-
 
             _products.Remove(productToDelete);
 
             // Spara till fil, annars uppdateras inte listan och ändringen ligger bara i minnet och försvinner när programmet stängs.
             RepositoryResult repoSaveResult = await _productRepository.WriteAsync(_products, _cts.Token);
-
             if (!repoSaveResult.Succeeded)
-                return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = repoSaveResult.ErrorMessage ?? "Ett okänt fel uppstod vid filsparning" };
+                return repoSaveResult.MapToServiceResult("Ett okänt fel uppstod vid filsparning");
 
             //Operationen lyckades
             return new ServiceResult { Succeeded = true, StatusCode = 204 };

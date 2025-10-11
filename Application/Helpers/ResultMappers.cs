@@ -6,6 +6,7 @@ namespace ApplicationLayer.Helpers;
 
 public static class ResultMappers
 {
+    // RepositoryResult -> ServiceResult (utan data)
     public static ServiceResult MapToServiceResult(
     // Extension-metod på RepositoryResult
     this RepositoryResult repoResult, 
@@ -32,7 +33,7 @@ public static class ResultMappers
     }
 
 
-
+    // RepositoryResult<T> -> ServiceResult<T> (med data)
     public static ServiceResult<T> MapToServiceResult<T>(
         this RepositoryResult<T> repoResult,
         string? customErrorMessage = null,
@@ -55,11 +56,10 @@ public static class ResultMappers
             StatusCode = repoResult.StatusCode,
             Data = repoResult.Data
         };
-
     }
 
-    // Mappar icke-generiskt RepositoryResult till ServiceResult<T>.
-    public static ServiceResult<T> MapToServiceResult<T>(
+    // RepositoryResult (icke-generisk) -> ServiceResult<T> (utan data)
+    public static ServiceResult<T> MapToServiceResultAs<T>(
     this RepositoryResult repoResult,
     string? customErrorMessage = null,
     int? overrideStatusCode = null)
