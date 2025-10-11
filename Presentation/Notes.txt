@@ -28,8 +28,9 @@ Branchen:
 feat(productservice.helpers): add UpdateCategoryAsync and UpdateManufacturerAsync
 
 ProductService:
-refactor: update SaveProductAsync with helper-methods
-fix: place IsDuplicateNamen requestId = null after name-check to not cause incorrect true
+ProductService:
+refactor(ProductService): update with helper-methods complete
+
 
 feat: add FormViewModelBase to minimera upprepad kod
 

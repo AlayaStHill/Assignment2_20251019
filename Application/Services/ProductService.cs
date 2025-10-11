@@ -174,8 +174,8 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
             if (!ensureResult.Succeeded)
                 return ensureResult;
 
-            Product? productToDelete = _products.FirstOrDefault(product => product.Id == id);
-            if (productToDelete == null)
+            Product? productToDelete = FindExistingProduct(id);
+            if (productToDelete is null)
                 return new ServiceResult { Succeeded = false, StatusCode = 404, ErrorMessage = $"Produkten med Id {id} kunde inte hittas" };
 
             _products.Remove(productToDelete);
