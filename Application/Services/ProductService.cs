@@ -9,14 +9,14 @@ using Domain.Interfaces;
 using Domain.Results;
 
 namespace ApplicationLayer.Services;
-public class ProductService(IRepository<Product> productRepository, IRepository<Category> categoryRepository, IRepository<Manufacturer> manufacturerRepository) : IProductService
+public partial class ProductService(IRepository<Product> productRepository, IRepository<Category> categoryRepository, IRepository<Manufacturer> manufacturerRepository) : IProductService
 {
     // fältets namn ska reflektera interfacet (vad det gör), inte implementationen (hur det görs)
     private readonly IRepository<Product> _productRepository = productRepository;
     private readonly IRepository<Category> _categoryRepository = categoryRepository;
     private readonly IRepository<Manufacturer> _manufacturerRepository = manufacturerRepository;
     private List<Product> _products = [];
-    // gäller för hela klassen - pekar alltid på den senaste instansen som newats i metoderna. När Cancel anropas stoppas just den instansen..Token tar emot stoppsignalen och vidarebefodrar den till koden som använder den. 
+    // Gäller för hela klassen - pekar alltid på den senaste instansen som newats i metoderna. När Cancel anropas stoppas just den instansen..Token tar emot stoppsignalen och vidarebefodrar den till koden som använder den. 
     private CancellationTokenSource _cts = null!;
     private bool _isLoaded;
 
@@ -68,7 +68,6 @@ public class ProductService(IRepository<Product> productRepository, IRepository<
         _cts ??= new CancellationTokenSource();
 
         RepositoryResult<IEnumerable<Product>>? loadResult = await _productRepository.ReadAsync(_cts.Token);
-
         if (!loadResult.Succeeded)
             return loadResult.MapToServiceResult("Ett okänt fel uppstod vid filhämtning");
 
@@ -107,51 +106,56 @@ public class ProductService(IRepository<Product> productRepository, IRepository<
     }
 
 
-    public async Task<ServiceResult> UpdateProductAsync(ProductUpdateRequest productUpdateRequest)
+    public async Task<ServiceResult> UpdateProductAsync(ProductUpdateRequest updateRequest)
     {
         try
         {
             _cts = new CancellationTokenSource();
 
-            if (string.IsNullOrWhiteSpace(productUpdateRequest.Name) || productUpdateRequest.Price <= 0)
+            if (string.IsNullOrWhiteSpace(updateRequest.Name) || updateRequest.Price <= 0)
                 return new ServiceResult<Product> { Succeeded = false, StatusCode = 400, ErrorMessage = "Produktfälten namn och pris är inte korrekt ifyllda." };
+
+            ServiceResult validationResult = ValidateRequest(updateRequest); 
+            if (!validationResult.Succeeded)
+                return validationResult;
+
 
             ServiceResult ensureResult = await EnsureLoadedAsync();
             if (!ensureResult.Succeeded)
                 return ensureResult;
 
-            Product? existingProduct = _products.FirstOrDefault(product => product.Id == productUpdateRequest.Id);
+            Product? existingProduct = _products.FirstOrDefault(product => product.Id == updateRequest.Id);
             if (existingProduct == null)
-                return new ServiceResult { Succeeded = false, StatusCode = 404, ErrorMessage = $"Produkten med Id {productUpdateRequest.Id} kunde inte hittas" };
+                return new ServiceResult { Succeeded = false, StatusCode = 404, ErrorMessage = $"Produkten med Id {updateRequest.Id} kunde inte hittas" };
 
             // Kontrollera om produkten redan finns. Om true = existerar redan
-            if (_products.Any(p => p.Name.Equals(productUpdateRequest.Name, StringComparison.OrdinalIgnoreCase) && p.Id != productUpdateRequest.Id))
-                return new ServiceResult { Succeeded = false, StatusCode = 409, ErrorMessage = $"En produkt med namnet {productUpdateRequest.Name} finns redan." };
+            if (_products.Any(p => p.Name.Equals(updateRequest.Name, StringComparison.OrdinalIgnoreCase) && p.Id != updateRequest.Id))
+                return new ServiceResult { Succeeded = false, StatusCode = 409, ErrorMessage = $"En produkt med namnet {updateRequest.Name} finns redan." };
 
             // Uppdatera produkten
-            existingProduct.Name = productUpdateRequest.Name;
-            existingProduct.Price = productUpdateRequest.Price;
+            existingProduct.Name = updateRequest.Name;
+            existingProduct.Price = updateRequest.Price;
 
             // Hämta eller skapa en kategori enbart om CategoryName inskickat
-            if (!string.IsNullOrWhiteSpace(productUpdateRequest.CategoryName))
+            if (!string.IsNullOrWhiteSpace(updateRequest.CategoryName))
             {
-                RepositoryResult<Category> categoryResult = await _categoryRepository.GetOrCreateAsync(category => category.Name == productUpdateRequest.CategoryName,
-                    () => new Category { Id = Guid.NewGuid().ToString(), Name = productUpdateRequest.CategoryName }, _cts.Token);
+                RepositoryResult<Category> categoryResult = await _categoryRepository.GetOrCreateAsync(category => category.Name == updateRequest.CategoryName,
+                    () => new Category { Id = Guid.NewGuid().ToString(), Name = updateRequest.CategoryName }, _cts.Token);
 
                 if (!categoryResult.Succeeded || categoryResult.Data == null)
-                    return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = categoryResult.ErrorMessage ?? "Kunde inte hämta eller skapa kategori." };
+                    return categoryResult.MapToServiceResult("Kunde inte hämta eller skapa kategori.");
 
                 existingProduct.Category = categoryResult.Data;
             }
 
             // Hämta eller skapa tillverkare enbart om ManufacturerName inskickat
-            if (!string.IsNullOrWhiteSpace(productUpdateRequest.ManufacturerName))
+            if (!string.IsNullOrWhiteSpace(updateRequest.ManufacturerName))
             {
-                RepositoryResult<Manufacturer> manufacturerResult = await _manufacturerRepository.GetOrCreateAsync(manufacturer => manufacturer.Name == productUpdateRequest.ManufacturerName,
-                    () => new Manufacturer { Id = Guid.NewGuid().ToString(), Name = productUpdateRequest.ManufacturerName }, _cts.Token);
+                RepositoryResult<Manufacturer> manufacturerResult = await _manufacturerRepository.GetOrCreateAsync(manufacturer => manufacturer.Name == updateRequest.ManufacturerName,
+                    () => new Manufacturer { Id = Guid.NewGuid().ToString(), Name = updateRequest.ManufacturerName }, _cts.Token);
 
                 if (!manufacturerResult.Succeeded || manufacturerResult.Data == null)
-                    return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = manufacturerResult.ErrorMessage ?? "Kunde inte hämta eller skapa tillverkare." };
+                    return manufacturerResult.MapToServiceResult("Kunde inte hämta eller skapa tillverkare.");
 
                 existingProduct.Manufacturer = manufacturerResult.Data;
             }
@@ -229,6 +233,10 @@ public class ProductService(IRepository<Product> productRepository, IRepository<
             }
         }
     }
+
+
+
+ 
 }
 
 

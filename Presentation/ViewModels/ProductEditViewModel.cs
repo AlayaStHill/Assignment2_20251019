@@ -42,7 +42,7 @@ public partial class ProductEditViewModel(IViewNavigationService viewNavigationS
     [RelayCommand]
     private async Task Save()
     {
-        try
+        try// BORDE KOLLA OM PRODUCTdATA == NULL? också
         {
             // Defense in depth: även om ProductService validerar fälten, en snabb kontroll här för att ge direkt feedback till användaren,  utan onödigt anrop till fil. 
             if (string.IsNullOrWhiteSpace(ProductData?.Name) || ProductData.Price < 0)
