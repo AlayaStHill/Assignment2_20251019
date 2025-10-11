@@ -1,8 +1,11 @@
 ﻿using ApplicationLayer.DTOs;
+using ApplicationLayer.Helpers;
 using ApplicationLayer.Interfaces;
 using ApplicationLayer.Results;
 using Domain.Entities;
-using System.Xml.Linq;
+using Domain.Helpers;
+using Domain.Results;
+using System.Linq;
 
 namespace ApplicationLayer.Services;
 
@@ -29,6 +32,42 @@ public partial class ProductService
     private bool IsDuplicateName(string requestName, string? requestId = null)
     {
         return _products.Any(product => (requestId is null || product.Id != requestId && string.Equals(product.Name, requestName, StringComparison.OrdinalIgnoreCase)));
+    }
+
+
+    private async Task<ServiceResult> UpdateCategoryAsync(Product existingProduct, string? categoryName)
+    {
+        if (!string.IsNullOrWhiteSpace(categoryName))
+        {
+            RepositoryResult<Category> categoryResult = await _categoryRepository.GetOrCreateAsync(category => string.Equals(category.Name, categoryName, StringComparison.OrdinalIgnoreCase),
+                () => new Category { Id = Guid.NewGuid().ToString(), Name = categoryName },_cts.Token);
+
+            if (!categoryResult.Succeeded || categoryResult.Data == null)
+                return categoryResult.MapToServiceResult("Kunde inte hämta eller skapa kategori.");
+
+            existingProduct.Category = categoryResult.Data;
+        }
+
+        return new ServiceResult { Succeeded = true, StatusCode = 200 };
+    }
+
+    private async Task<ServiceResult> UpdateManufacturerAsync(Product existingProduct, string? manufacturerName)
+    {
+        if (!string.IsNullOrWhiteSpace(manufacturerName))
+        {
+            var name = manufacturerName.Trim();
+
+            var manufacturerResult = await _manufacturerRepository.GetOrCreateAsync(manufacturer => string.Equals(manufacturer.Name, manufacturerName, StringComparison.OrdinalIgnoreCase),
+                () => new Manufacturer { Id = Guid.NewGuid().ToString(), Name = manufacturerName },
+                _cts.Token);
+
+            if (!manufacturerResult.Succeeded || manufacturerResult.Data == null)
+                return manufacturerResult.MapToServiceResult("Kunde inte hämta eller skapa tillverkare.");
+
+            existingProduct.Manufacturer = manufacturerResult.Data;
+        }
+
+        return new ServiceResult { Succeeded = true, StatusCode = 200 };
     }
 }
 

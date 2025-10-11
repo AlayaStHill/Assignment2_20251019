@@ -112,9 +112,6 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
         {
             _cts = new CancellationTokenSource();
 
-            if (string.IsNullOrWhiteSpace(updateRequest.Name) || updateRequest.Price <= 0)
-                return new ServiceResult<Product> { Succeeded = false, StatusCode = 400, ErrorMessage = "Produktfälten namn och pris är inte korrekt ifyllda." };
-
             ServiceResult validationResult = ValidateRequest(updateRequest); 
             if (!validationResult.Succeeded)
                 return validationResult;
@@ -132,33 +129,21 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
                 return new ServiceResult { Succeeded = false, StatusCode = 409, ErrorMessage = $"En produkt med namnet {updateRequest.Name} finns redan." };
 
 
+
+
+            // Hämta eller skapa en kategori enbart om CategoryName inskickat
+            ServiceResult categoryResult = await UpdateCategoryAsync(existingProduct, updateRequest.CategoryName);
+            if (!categoryResult.Succeeded)
+                return categoryResult;
+
+            // Hämta eller skapa tillverkare enbart om ManufacturerName inskickat
+            ServiceResult manufacturerResult = await UpdateManufacturerAsync(existingProduct, updateRequest.CategoryName);
+            if (!categoryResult.Succeeded)
+                return manufacturerResult;
+
             // Uppdatera produkten
             existingProduct.Name = updateRequest.Name;
             existingProduct.Price = updateRequest.Price;
-
-            // Hämta eller skapa en kategori enbart om CategoryName inskickat
-            if (!string.IsNullOrWhiteSpace(updateRequest.CategoryName))
-            {
-                RepositoryResult<Category> categoryResult = await _categoryRepository.GetOrCreateAsync(category => category.Name == updateRequest.CategoryName,
-                    () => new Category { Id = Guid.NewGuid().ToString(), Name = updateRequest.CategoryName }, _cts.Token);
-
-                if (!categoryResult.Succeeded || categoryResult.Data == null)
-                    return categoryResult.MapToServiceResult("Kunde inte hämta eller skapa kategori.");
-
-                existingProduct.Category = categoryResult.Data;
-            }
-
-            // Hämta eller skapa tillverkare enbart om ManufacturerName inskickat
-            if (!string.IsNullOrWhiteSpace(updateRequest.ManufacturerName))
-            {
-                RepositoryResult<Manufacturer> manufacturerResult = await _manufacturerRepository.GetOrCreateAsync(manufacturer => manufacturer.Name == updateRequest.ManufacturerName,
-                    () => new Manufacturer { Id = Guid.NewGuid().ToString(), Name = updateRequest.ManufacturerName }, _cts.Token);
-
-                if (!manufacturerResult.Succeeded || manufacturerResult.Data == null)
-                    return manufacturerResult.MapToServiceResult("Kunde inte hämta eller skapa tillverkare.");
-
-                existingProduct.Manufacturer = manufacturerResult.Data;
-            }
 
             RepositoryResult saveResult = await _productRepository.WriteAsync(_products, _cts.Token);
             if (!saveResult.Succeeded)
