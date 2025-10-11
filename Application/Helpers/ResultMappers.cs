@@ -2,10 +2,10 @@
 using Domain.Results;
 
 namespace ApplicationLayer.Helpers;
-// Ger läsbarhet och mindre duplicering, men behåller specificitet i felmeddelanden.
+// Översätter RepoResult till ServiceResult. Ger läsbarhet och mindre duplicering, men behåller specificitet i felmeddelanden. 
+
 public static class ResultMappers
 {
-
     public static ServiceResult MapToServiceResult(
     // Extension-metod på RepositoryResult
     this RepositoryResult repoResult, 
@@ -13,25 +13,60 @@ public static class ResultMappers
     string? customErrorMessage = null,
     int? overrideStatusCode = null)
     {
-        if (repoResult.Succeeded)
+        if (!repoResult.Succeeded)
         {
             return new ServiceResult
             {
-                Succeeded = true,
+                Succeeded = false,
                 // Ternary operator (condition ? true : false) Failsafe,det skickas alltid med statuskoder nu
-                StatusCode = overrideStatusCode ?? (repoResult.StatusCode == 0 ? 200 : repoResult.StatusCode)
+                StatusCode = overrideStatusCode ?? (repoResult.StatusCode == 0 ? 500 : repoResult.StatusCode),
+                ErrorMessage = customErrorMessage ?? repoResult.ErrorMessage ?? "Ett okänt fel uppstod vid filhantering."
             };
         }
 
         return new ServiceResult
         {
-            Succeeded = false,
-            StatusCode = overrideStatusCode ?? (repoResult.StatusCode == 0 ? 500 : repoResult.StatusCode),
-            ErrorMessage = customErrorMessage ?? repoResult.ErrorMessage ?? "Ett okänt fel uppstod vid filhantering."
+            Succeeded = true,
+            StatusCode = overrideStatusCode ?? (repoResult.StatusCode == 0 ? 200 : repoResult.StatusCode)
         };
     }
 
+
+
+    public static ServiceResult<T> MapToServiceResult<T>(
+        this RepositoryResult<T> repoResult,
+        string? customErrorMessage = null,
+        int? overrideStatusCode = null)
+    {
+        if (!repoResult.Succeeded || repoResult.Data is null)
+        {
+            return new ServiceResult<T>
+            {
+                Succeeded = false,
+                StatusCode = overrideStatusCode ?? (repoResult.StatusCode == 0 ? 500 : repoResult.StatusCode),
+                ErrorMessage = customErrorMessage ?? repoResult.ErrorMessage ?? "Ett okänt fel uppstod vid filhantering.",
+                Data = default
+            };
+        }
+
+        return new ServiceResult<T>
+        {
+            Succeeded = true,
+            StatusCode = repoResult.StatusCode,
+            Data = repoResult.Data
+        };
+
+    }
+    
 }
 
-//var saveResult = await _productRepository.WriteAsync(_products, _cts.Token);
-//return saveResult.MapToServiceResult("Ett okänt fel inträffade vid filsparning");
+/*
+Tydlighet - Scenarion:
+Read (Get):
+Success = explicit 200 + Data (även tom lista).
+Fel = mapper (404/500).
+
+Write (Create/Update/Delete):
+Success = explicit (201 vid Create, 204 vid Update/Delete).
+Fel = mapper (404/409/500).
+*/

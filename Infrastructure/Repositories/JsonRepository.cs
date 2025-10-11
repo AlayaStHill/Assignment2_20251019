@@ -58,7 +58,7 @@ public class JsonRepository<T> : IRepository<T> where T : class
             // Om JSON är ogiltig, återställ filen till en giltig tom lista
             await File.WriteAllTextAsync(_filePath, "[]", cancellationToken);
 
-            return RepositoryResult<IEnumerable<T>>.InternalServerError($"Ogiltig JSON i {_filePath}: {ex.Message}"); 
+            return RepositoryResult<IEnumerable<T>>.InternalServerError($"Ogiltig JSON: {ex.Message}"); 
         }
     }
 
