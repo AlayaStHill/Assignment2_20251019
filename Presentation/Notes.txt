@@ -1,79 +1,64 @@
-För att uppnå kravet för väl godkänt krävs även följande:
-Du ska göra ytterligare en applikation, som ska vara en grafisk applikation (WPF/MAUI).
-* Det ska gå att navigera sig mellan två vyer. Ena vyn ska vara själva listan och den andra vyn ska vara en vy där du kan skapa och visa en produkt (du får ha dessa på två separata vyer om du så vill).
-Produkten ska även innehålla värden som kategori och tillverkare. Dessa ska då vara separata klasser.
-Du måste implementera interfaces.
-Du måste använda dig av Service Pattern och separera ansvarsområden.
-Utöver funktionalitet såsom att lägga till och visa alla produkter ska det nu även gå att uppdatera produktinformationen samt ta bort en produkt från listan. 
-Du ska även se till att en produkt inte kan läggas till två gånger eller att en tom produkt kan läggas till.
+ï»¿FÃ¶r att uppnÃ¥ kravet fÃ¶r vÃ¤l godkÃ¤nt krÃ¤vs Ã¤ven fÃ¶ljande:
+Du ska gÃ¶ra ytterligare en applikation, som ska vara en grafisk applikation (WPF/MAUI).
+* Det ska gÃ¥ att navigera sig mellan tvÃ¥ vyer. Ena vyn ska vara sjÃ¤lva listan och den andra vyn ska vara en vy dÃ¤r du kan skapa och visa en produkt (du fÃ¥r ha dessa pÃ¥ tvÃ¥ separata vyer om du sÃ¥ vill).
+Produkten ska Ã¤ven innehÃ¥lla vÃ¤rden som kategori och tillverkare. Dessa ska dÃ¥ vara separata klasser.
+Du mÃ¥ste implementera interfaces.
+Du mÃ¥ste anvÃ¤nda dig av Service Pattern och separera ansvarsomrÃ¥den.
+UtÃ¶ver funktionalitet sÃ¥som att lÃ¤gga till och visa alla produkter ska det nu Ã¤ven gÃ¥ att uppdatera produktinformationen samt ta bort en produkt frÃ¥n listan. 
+Du ska Ã¤ven se till att en produkt inte kan lÃ¤ggas till tvÃ¥ gÃ¥nger eller att en tom produkt kan lÃ¤ggas till.
 * Du ska skapa enhetstester som testar alla dina funktioner som du har skapat.
-Lägg till en kontroll i funktionen som lägger till en produkt för att säkerställa att produkter med samma namn inte kan läggas till två gånger.
-Produktinformationen ska sparas ner till en .json-fil och ska även kunna hämtas upp när programmet startar och när ny lista ska hämtas.
-* Du måste göra enhetstester/integrationstester för samtlig funktionalitet såsom att lägga till, visa, uppdatera, ta bort, läsa in lista, spara lista.
-Du måste använda dig av Git/GitHub och använda dig av olika branches när du skapar din funktionalitet. Dina branches i GitHub får inte tas bort utan ska finnas kvar. Men den slutgiltiga inlämningen ska vara main/master-branchen.
+LÃ¤gg till en kontroll i funktionen som lÃ¤gger till en produkt fÃ¶r att sÃ¤kerstÃ¤lla att produkter med samma namn inte kan lÃ¤ggas till tvÃ¥ gÃ¥nger.
+Produktinformationen ska sparas ner till en .json-fil och ska Ã¤ven kunna hÃ¤mtas upp nÃ¤r programmet startar och nÃ¤r ny lista ska hÃ¤mtas.
+* Du mÃ¥ste gÃ¶ra enhetstester/integrationstester fÃ¶r samtlig funktionalitet sÃ¥som att lÃ¤gga till, visa, uppdatera, ta bort, lÃ¤sa in lista, spara lista.
+Du mÃ¥ste anvÃ¤nda dig av Git/GitHub och anvÃ¤nda dig av olika branches nÃ¤r du skapar din funktionalitet. Dina branches i GitHub fÃ¥r inte tas bort utan ska finnas kvar. Men den slutgiltiga inlÃ¤mningen ska vara main/master-branchen.
 
 ---------------------------------------------------------------------------------
-* View (XAML + code-behind): ska bara hantera utseende och användarinteraktion (knappar, menyer, UI-element).
-	Databindning
-* ViewModel: ska innehålla logiken (vad som händer när man klickar, laddar data, byter vy).
 
-Element (också kallat kontroll): window, grid, button, slider, textbox etc.
-På Window-elementet finns olika attribut: title, xmlns, x:Class, source (src)
+Element (ocksÃ¥ kallat kontroll): window, grid, button, slider, textbox etc.
+PÃ¥ Window-elementet finns olika attribut: title, xmlns, x:Class, source (src)
 
-public async Task<ProductServiceResult<Product>> SaveProductAsync(Product product) // MÅSTE FÅNGA UPP DATA = NULL I MAINWINDOW.XAML.CS
+public async Task<ProductServiceResult<Product>> SaveProductAsync(Product product) // MÃ…STE FÃ…NGA UPP DATA = NULL I MAINWINDOW.XAML.CS
 
 
 ---------------------------------------------------------------
 Branchen: 
-feat(productservice.helpers): add UpdateCategoryAsync and UpdateManufacturerAsync
 
-ProductService:
-ProductService:
+ use 'using var' for CTS disposal
+
+
+
 refactor(ProductService): update with helper-methods complete
 
 
 feat: add FormViewModelBase to minimera upprepad kod
 
-feat: – när du lägger till en ny funktionalitet
-fix: – när du rättar ett fel
-refactor: – när du omstrukturerar utan ny funktion
-docs: – när du ändrar dokumentation
-test: – när du lägger till eller ändrar tester
+feat: â€“ nÃ¤r du lÃ¤gger till en ny funktionalitet
+fix: â€“ nÃ¤r du rÃ¤ttar ett fel
+refactor: â€“ nÃ¤r du omstrukturerar utan ny funktion
+docs: â€“ nÃ¤r du Ã¤ndrar dokumentation
+test: â€“ nÃ¤r du lÃ¤gger till eller Ã¤ndrar tester
 
-
-
+CANCELLATIONTOKEN:
+.NET-standard: den som startar operationen Ã¤ger ocksÃ¥ token och kan avbryta.
+I ditt fall: anvÃ¤ndaren av applikationen (via UI:t) â†’ till exempel trycka pÃ¥ en â€œCancelâ€-knapp.
+Effekten: alla async-anrop i service och repo som tar emot token fÃ¥r en OperationCanceledException och slutar kÃ¶ra.
 ----------------------------------------------------------------------
 
 
 
 
 
-ATT GÖRA:
+ATT GÃ–RA:
 --------------
-använd konsekvent if (!result) i metoderna
-bryt ut och skapa hjälpmetoder för att korta ned metoder
+Ta tag i cancellationtoken och cancel Ã¤ndringar
+bryt ut och skapa hjÃ¤lpmetoder fÃ¶r att korta ned metoder
 
-Skapa en FormViewModelBase - cancel och save-metoderna-duplicering.. ärver
-Skapa en StatusViewModelBase alla tre metoder plocka bor statusmeddelanden efter ett tag..ärver
+Skapa en FormViewModelBase - cancel och save-metoderna-duplicering.. Ã¤rver
+Skapa en StatusViewModelBase alla tre metoder plocka bor statusmeddelanden efter ett tag..Ã¤rver
 
 Enhetstester xUnit 
 (integrationstest Repository??)
 
-Du har rätt: en för strikt mapper gör att du tappar testbarhet och kontroll.
-Men en flexibel mapper med override låter dig få både:
-enhetlighet i standardfallet
-kontroll när du behöver särskilja fel
-
-
-??? Senare kan du alltid lägga till cache/minneslager, men just nu kommer det inte göra någon skillnad i din app – bara göra det svårare att förstå vad som händer.
-********inte case-sensitive produkt, tillverkare, kategori så att inte två produkter kan läggast till med samma namn fast små eller stor bokstäver
-
-
-
-
-
-Lektion 09/29 mer info productlistview?
-MATERIAL TILL PROJEKTET: MVVM + LEKTION_20250929
 
 
 
@@ -81,16 +66,16 @@ MATERIAL TILL PROJEKTET: MVVM + LEKTION_20250929
 
 DDD (Domain-Driven Design)
 --------------------------
-Domänen:      Produkthantering (området programmet handlar om)
-Entities:     Product, Category, Manufacturer. Även kallat domänens kärnmodeller. Har alltid en unik Id-property, vilket är det som gör dem till entities.
-DTOs:         ProductUpdateRequest, ProductRequest (Data Transfer Object - används bara för att flytta data mellan lager, ex. UI -> ProductService)
+DomÃ¤nen:      Produkthantering (omrÃ¥det programmet handlar om)
+Entities:     Product, Category, Manufacturer. Ã„ven kallat domÃ¤nens kÃ¤rnmodeller. Har alltid en unik Id-property, vilket Ã¤r det som gÃ¶r dem till entities.
+DTOs:         ProductUpdateRequest, ProductRequest (Data Transfer Object - anvÃ¤nds bara fÃ¶r att flytta data mellan lager, ex. UI -> ProductService)
 Repositories: ProductRepository, CategoryRepository, ManufacturerRepository
 Service:      ProductService (samordnar logiken)
 
-Domain =		 Entities och Interfaces (vad systemet är). Kataloger: Project Reference: None
-Application =	 Use cases och affärslogik (vad systemet gör). Project Reference: Domain
+Domain =		 Entities och Interfaces (vad systemet Ã¤r). Kataloger: Project Reference: None
+Application =	 Use cases och affÃ¤rslogik (vad systemet gÃ¶r). Project Reference: Domain
 Infrastructure = Repositories och teknik (hur systemet lagrar data). Project Reference: Domain
-Presentation =	 UI/MVVM (hur användaren interagerar). Project Reference: Domain (Composition Root - DI-container)
+Presentation =	 UI/MVVM (hur anvÃ¤ndaren interagerar). Project Reference: Domain (Composition Root - DI-container)
 
 
 
@@ -101,8 +86,8 @@ extensionmethods + helpers men inte readasync i filerepository
 // helpers, extensionmethods testas, id visas i listvyn eller editvyn
 
 
-Repository: tekniskt skydd (filåtkomst, skrivfel)
+Repository: tekniskt skydd (filÃ¥tkomst, skrivfel)
 
-Service: affärslogiskt skydd (t.ex. “produkt finns redan”)
+Service: affÃ¤rslogiskt skydd (t.ex. â€œprodukt finns redanâ€)
 
-ViewModel: användarskydd (UI’t kraschar inte)
+ViewModel: anvÃ¤ndarskydd (UIâ€™t kraschar inte)

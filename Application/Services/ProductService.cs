@@ -4,7 +4,6 @@ using ApplicationLayer.Helpers;
 using ApplicationLayer.Interfaces;
 using ApplicationLayer.Results;
 using Domain.Entities;
-using Domain.Helpers;
 using Domain.Interfaces;
 using Domain.Results;
 
@@ -22,10 +21,13 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
 
     public async Task<ServiceResult<Product>> SaveProductAsync(ProductCreateRequest createRequest) // MÅSTE FÅNGA UPP DATA = NULL I MAINWINDOW.XAML.CS 
     {
-        try
+        // Skapar en ny lokal cts-instans och ger alltid en färsk token utan tidigare cancellation. using ser till att Dispose() körs automatiskt när metoden är klar.
+        using CancellationTokenSource cts = new CancellationTokenSource();
+        // Kopplar fältet till instansen
+        _cts = cts;
+
+        try 
         {
-            // Typen är redan specificerad i fältet. Här kommer en ny tilldelning bara. Deklarerar jag typen frånkopplar jag den från fältet och skapar en ny lokal variabel. Skapar en ny instans för att säkerställa en ny nollställd _cts utan pågående cancellation. 
-            _cts = new CancellationTokenSource();
 
             ServiceResult validationResult = ValidateRequest(createRequest);
             if (!validationResult.Succeeded)
@@ -68,48 +70,76 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
         // Säkerställer att _cts inte är null vid anropning av ReadAsync eftersom EnsureLoaded är publik. Om _cts är null -> skapa en ny
         _cts ??= new CancellationTokenSource();
 
-        RepositoryResult<IEnumerable<Product>>? loadResult = await _productRepository.ReadAsync(_cts.Token);
-        if (!loadResult.Succeeded)
-            return loadResult.MapToServiceResult("Ett okänt fel uppstod vid filhämtning");
-
-        _products = [.. (loadResult.Data ?? [])];
-        _isLoaded = true;
-
-        // Listan var inte laddad från början, ReadAsync kördes och det lyckades.
-        return new ServiceResult { Succeeded = true, StatusCode = 200 };
-    }
-
-    public async Task<ServiceResult<IEnumerable<Product>>> GetProductsAsync()
-    {
         try
         {
-            _cts = new CancellationTokenSource();
+            RepositoryResult<IEnumerable<Product>>? loadResult = await _productRepository.ReadAsync(_cts.Token);
+            if (!loadResult.Succeeded)
+                return loadResult.MapToServiceResult("Ett okänt fel uppstod vid filhämtning");
 
-            ServiceResult ensureResult = await EnsureLoadedAsync();
-            if (!ensureResult.Succeeded)
-                return new ServiceResult<IEnumerable<Product>> { Succeeded = false, StatusCode = 500, ErrorMessage = ensureResult.ErrorMessage, Data = [] };
+            _products = [.. (loadResult.Data ?? [])];
+            _isLoaded = true;
 
-            // spreadoperator, tar den nya listan och sprider det i den nya. Istället för att loopa igenom med foreach tar den hela listan på en gång
-            return new ServiceResult<IEnumerable<Product>> { Succeeded = true, StatusCode = 200, Data = [.. _products] };
+            // Listan var inte laddad från början, ReadAsync kördes och det lyckades.
+            return new ServiceResult { Succeeded = true, StatusCode = 200 };
+        }
+        // Catch-block: hanterar avbryt och oväntade buggar. Sådant som repot inte fångar
+        catch (OperationCanceledException)
+        {
+            return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = "Hämtning avbröts." };
         }
         catch (Exception ex)
         {
-            Cancel();
-            // Tömmer data som finns sparad i listan, så att den inte innehåller gammal information efter ett fel.
-            _products = [];
-            return new ServiceResult<IEnumerable<Product>> { Succeeded = false, StatusCode = 500, ErrorMessage = $"Fel vid filhämtning: {ex.Message}", Data = [] };
-        }
-        finally
-        {
-            _cts.Dispose();
+            return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = $"Fel vid filhämtning: {ex.Message}" };
         }
 
+
+    }
+
+    //public async Task<ServiceResult<IEnumerable<Product>>> GetProductsAsync()
+    //{
+    //    try // Fånga ev. IO-relaterade exceptions från EnsureLoadedAsync. ReadAsync fångar JsonException
+    //    {
+    //        _cts = new CancellationTokenSource();
+
+    //        ServiceResult ensureResult = await EnsureLoadedAsync();
+    //        if (!ensureResult.Succeeded)
+    //            return new ServiceResult<IEnumerable<Product>> { Succeeded = false, StatusCode = 500, ErrorMessage = ensureResult.ErrorMessage, Data = [] };
+
+    //        // spreadoperator, tar den nya listan och sprider det i den nya. Istället för att loopa igenom med foreach tar den hela listan på en gång
+    //        return new ServiceResult<IEnumerable<Product>> { Succeeded = true, StatusCode = 200, Data = [.. _products] };
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        Cancel();
+    //        // Tömmer data som finns sparad i listan, så att den inte innehåller gammal information efter ett fel.
+    //        _products = [];
+    //        return new ServiceResult<IEnumerable<Product>> { Succeeded = false, StatusCode = 500, ErrorMessage = $"Fel vid filhämtning: {ex.Message}", Data = [] };
+    //    }
+    //    finally
+    //    {
+    //        _cts.Dispose();
+    //    }
+
+    //}
+
+    // Behöver inte try-catch – anropar bara EnsureLoaded/ReadAsync som redan hanterar felen
+    public async Task<ServiceResult<IEnumerable<Product>>> GetProductsAsync()
+    {
+        using CancellationTokenSource cts = new CancellationTokenSource();
+        _cts = cts;
+
+        var ensureResult = await EnsureLoadedAsync();
+        if (!ensureResult.Succeeded)
+            return new ServiceResult<IEnumerable<Product>> { Succeeded = false, StatusCode = 500, ErrorMessage = ensureResult.ErrorMessage, Data = [] };
+
+        // spreadoperator, tar den nya listan och sprider det i den nya. Istället för att loopa igenom med foreach tar den hela listan på en gång
+        return new ServiceResult<IEnumerable<Product>> { Succeeded = true, StatusCode = 200, Data = [.. _products] };
     }
 
 
     public async Task<ServiceResult> UpdateProductAsync(ProductUpdateRequest updateRequest)
     {
-        try
+        try 
         {
             _cts = new CancellationTokenSource();
 
@@ -166,7 +196,7 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
 
     public async Task<ServiceResult> DeleteProductAsync(string id)
     {
-        try
+        try 
         {
             _cts = new CancellationTokenSource();
 
@@ -223,3 +253,12 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
 }
 
 
+tabort cancel
+
+        byta dispose i finally till using
+
+    using var cts = new CancellationTokenSource();
+_cts = cts;
+    // Dispose körs automatiskt när metoden lämnar scope
+
+    •	själv skapa och äga en CancellationTokenSource i ViewModel och skicka in cts.Token till din service-metod, 

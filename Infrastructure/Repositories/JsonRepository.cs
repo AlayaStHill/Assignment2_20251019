@@ -42,27 +42,59 @@ public class JsonRepository<T> : IRepository<T> where T : class
 
 
     // CancellationToken cancellationToken här är kopplad till CancellationTokenSourse i ProductService, varifrån dessa metoder kan avbrytas
+    //public async Task<RepositoryResult<IEnumerable<T>>> ReadAsync(CancellationToken cancellationToken)
+    //{
+    //    try
+    //    {
+    //        EnsureInitialized(_dataDirectory, _filePath);
+
+    //        string json = await File.ReadAllTextAsync(_filePath, cancellationToken);
+
+    //        List<T>? entities = JsonSerializer.Deserialize<List<T>>(json, _jsonOptions);
+    //        return RepositoryResult<IEnumerable<T>>.OK(entities ?? []);
+    //    }
+    //    catch (JsonException ex)
+    //    {
+    //        // Om JSON är ogiltig, återställ filen till en giltig tom lista
+    //        await File.WriteAllTextAsync(_filePath, "[]", cancellationToken);
+
+    //        return RepositoryResult<IEnumerable<T>>.InternalServerError($"Ogiltig JSON: {ex.Message}");
+    //    }
+    //}
+
+
     public async Task<RepositoryResult<IEnumerable<T>>> ReadAsync(CancellationToken cancellationToken)
     {
         try
         {
-            EnsureInitialized(_dataDirectory, _filePath);  
+            EnsureInitialized(_dataDirectory, _filePath);
 
             string json = await File.ReadAllTextAsync(_filePath, cancellationToken);
 
             List<T>? entities = JsonSerializer.Deserialize<List<T>>(json, _jsonOptions);
             return RepositoryResult<IEnumerable<T>>.OK(entities ?? []);
         }
+
+        // Catch-block: fångar förväntade IO- och JSON-fel och mappar dem till RepositoryResult. ProductService hanterar endast avbryt och oväntade fel i sin egen logik.
+        catch (OperationCanceledException) { throw; } // bubbla vidare så avbryt via cancellationtoken fungerar
         catch (JsonException ex)
         {
-            // Om JSON är ogiltig, återställ filen till en giltig tom lista
             await File.WriteAllTextAsync(_filePath, "[]", cancellationToken);
-
-            return RepositoryResult<IEnumerable<T>>.InternalServerError($"Ogiltig JSON: {ex.Message}"); 
+            return RepositoryResult<IEnumerable<T>>.InternalServerError($"Ogiltig JSON: {ex.Message}");
+        }
+        catch (IOException ex)
+        {
+            return RepositoryResult<IEnumerable<T>>.InternalServerError($"Filfel: {ex.Message}");
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return RepositoryResult<IEnumerable<T>>.InternalServerError($"Behörighetsfel: {ex.Message}");
+        }
+        catch (Exception ex) // Sista fallback för oväntade fel som inte fångats
+        {
+            return RepositoryResult<IEnumerable<T>>.InternalServerError($"Oväntat fel vid läsning: {ex.Message}");
         }
     }
-
-
 
     public async Task<RepositoryResult> WriteAsync(IEnumerable<T> entities, CancellationToken cancellationToken)
     {
