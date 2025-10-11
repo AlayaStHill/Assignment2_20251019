@@ -2,6 +2,7 @@
 using ApplicationLayer.Interfaces;
 using ApplicationLayer.Results;
 using Domain.Entities;
+using System.Xml.Linq;
 
 namespace ApplicationLayer.Services;
 
@@ -24,7 +25,10 @@ public partial class ProductService
         return _products.FirstOrDefault(product => product.Id == id);
     }
 
-
+    // Finns en produkt i _products, vars ID inte är = requestId men vars namn är = requestNamn. Använda på CreateRequest då id valbart
+    private bool IsDuplicateName(string requestName, string? requestId = null)
+    {
+        return _products.Any(product => (requestId is null || product.Id != requestId && string.Equals(product.Name, requestName, StringComparison.OrdinalIgnoreCase)));
+    }
 }
 
-     

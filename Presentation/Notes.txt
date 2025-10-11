@@ -25,7 +25,7 @@ public async Task<ProductServiceResult<Product>> SaveProductAsync(Product produc
 
 ---------------------------------------------------------------
 Branchen: 
-
+feat(productservice.helpers): add IsDuplicateName
 
 feat: add FormViewModelBase to minimera upprepad kod
 
