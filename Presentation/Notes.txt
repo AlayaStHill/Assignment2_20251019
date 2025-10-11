@@ -26,8 +26,7 @@ public async Task<ProductServiceResult<Product>> SaveProductAsync(Product produc
 ---------------------------------------------------------------
 Branchen: 
 
-feat(ResultMapper): add MapToServiceResult<T>-method
-fix(ProductService): change the order of methods according to CRUD
+feat(ResultMapper): add method that turn non-generic RepositoryResult to ServiceResult<T> 
 
 feat: add FormViewModelBase to minimera upprepad kod
 

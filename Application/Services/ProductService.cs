@@ -44,18 +44,16 @@ public class ProductService(IRepository<Product> productRepository, IRepository<
             if (!ensureResult.Succeeded)
                 return new ServiceResult<Product> { Succeeded = false, StatusCode = 500, ErrorMessage = ensureResult.ErrorMessage, Data = null };
 
-            // Kontrollera om produkten redan finns
-            bool productExists = _products.Any(product => product.Name.Equals(productCreateRequest.Name, StringComparison.OrdinalIgnoreCase));
-
-            if (productExists)
-                return new ServiceResult<Product> { Succeeded = false, StatusCode = 409, ErrorMessage = $"En produkt med namnet {productCreateRequest.Name} finns redan i systemet.", Data = null };
-
+            // Kontrollera om produkten redan finns. Om true = existerar redan
+            if (_products.Any(p => p.Name.Equals(productCreateRequest.Name, StringComparison.OrdinalIgnoreCase)))
+                return new ServiceResult<Product> { Succeeded = false, StatusCode = 409, ErrorMessage = $"En produkt med namnet {productCreateRequest.Name} finns redan.", Data = null };
 
             Product newProduct = ProductFactory.MapRequestToProduct(productCreateRequest);
-
             _products.Add(newProduct);
 
-            await _productRepository.WriteAsync(_products, _cts.Token);
+            RepositoryResult saveResult = await _productRepository.WriteAsync(_products, _cts.Token);
+            if (!saveResult.Succeeded)
+                return saveResult.MapToServiceResult<Product>("Kunde inte spara till fil.");
 
             return new ServiceResult<Product> { Succeeded = true, StatusCode = 201, Data = newProduct };
         }

@@ -57,7 +57,31 @@ public static class ResultMappers
         };
 
     }
-    
+
+    // Mappar icke-generiskt RepositoryResult till ServiceResult<T>.
+    public static ServiceResult<T> MapToServiceResult<T>(
+    this RepositoryResult repoResult,
+    string? customErrorMessage = null,
+    int? overrideStatusCode = null)
+    {
+        if (!repoResult.Succeeded)
+        {
+            return new ServiceResult<T>
+            {
+                Succeeded = false,
+                StatusCode = overrideStatusCode ?? (repoResult.StatusCode == 0 ? 500 : repoResult.StatusCode),
+                ErrorMessage = customErrorMessage ?? repoResult.ErrorMessage ?? "Ett okänt fel uppstod vid filhantering.",
+                Data = default
+            };
+        }
+
+        return new ServiceResult<T>
+        {
+            Succeeded = true,
+            StatusCode = overrideStatusCode ?? (repoResult.StatusCode == 0 ? 200 : repoResult.StatusCode),
+            Data = default
+        };
+    }
 }
 
 /*
