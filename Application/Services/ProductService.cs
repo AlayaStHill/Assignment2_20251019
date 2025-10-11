@@ -20,25 +20,26 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
     private CancellationTokenSource _cts = null!;
     private bool _isLoaded;
 
-    public async Task<ServiceResult<Product>> SaveProductAsync(ProductCreateRequest productCreateRequest) // MÅSTE FÅNGA UPP DATA = NULL I MAINWINDOW.XAML.CS 
+    public async Task<ServiceResult<Product>> SaveProductAsync(ProductCreateRequest createRequest) // MÅSTE FÅNGA UPP DATA = NULL I MAINWINDOW.XAML.CS 
     {
         try
         {
             // Typen är redan specificerad i fältet. Här kommer en ny tilldelning bara. Deklarerar jag typen frånkopplar jag den från fältet och skapar en ny lokal variabel. Skapar en ny instans för att säkerställa en ny nollställd _cts utan pågående cancellation. 
             _cts = new CancellationTokenSource();
 
-            if (string.IsNullOrWhiteSpace(productCreateRequest.Name) || productCreateRequest.Price < 0)
+            ServiceResult validationResult = ValidateRequest(createRequest);
+            if (!validationResult.Succeeded)
                 return new ServiceResult<Product> { Succeeded = false, StatusCode = 400, ErrorMessage = "Produktfälten är inte korrekt ifyllda." };
 
             ServiceResult ensureResult = await EnsureLoadedAsync();
             if (!ensureResult.Succeeded)
                 return new ServiceResult<Product> { Succeeded = false, StatusCode = 500, ErrorMessage = ensureResult.ErrorMessage, Data = null };
-            
-            // Jämför product.Name med productUpdateRequest.Name tecken för tecken och ignorerar skillnaden mellan stora/små bokstäver, Ordinal jämförelse = jämför bokstävernas nummer i dator (Unicode-värden), inte deras plats i alfabetet som kan skilja sig beroende på språkinställning.
-            if (_products.Any(p => p.Name.Equals(productCreateRequest.Name, StringComparison.OrdinalIgnoreCase)))
-                return new ServiceResult<Product> { Succeeded = false, StatusCode = 409, ErrorMessage = $"En produkt med namnet {productCreateRequest.Name} finns redan.", Data = null };
 
-            Product newProduct = ProductFactory.MapRequestToProduct(productCreateRequest);
+            // Jämför product.Name med createRequest.Name tecken för tecken och ignorerar skillnaden mellan stora/små bokstäver, Ordinal jämförelse = jämför bokstävernas nummer i dator (Unicode-värden), inte deras plats i alfabetet som kan skilja sig beroende på språkinställning.
+            if (IsDuplicateName(createRequest.Name))
+                return new ServiceResult<Product> { Succeeded = false, StatusCode = 409, ErrorMessage = $"En produkt med namnet {createRequest.Name} finns redan." };
+
+            Product newProduct = ProductFactory.MapRequestToProduct(createRequest);
             _products.Add(newProduct);
 
             RepositoryResult saveResult = await _productRepository.WriteAsync(_products, _cts.Token);
@@ -128,9 +129,6 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
             if (IsDuplicateName(updateRequest.Name, updateRequest.Id))
                 return new ServiceResult { Succeeded = false, StatusCode = 409, ErrorMessage = $"En produkt med namnet {updateRequest.Name} finns redan." };
 
-
-
-
             // Hämta eller skapa en kategori enbart om CategoryName inskickat
             ServiceResult categoryResult = await UpdateCategoryAsync(existingProduct, updateRequest.CategoryName);
             if (!categoryResult.Succeeded)
@@ -147,7 +145,7 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
 
             RepositoryResult saveResult = await _productRepository.WriteAsync(_products, _cts.Token);
             if (!saveResult.Succeeded)
-                return saveResult.MapToServiceResult("Ett okänt fel inträffade vid filsparning");
+                return saveResult.MapToServiceResult("Ett okänt fel uppstod vid filsparning");
 
             // Operationen lyckas
             return new ServiceResult { Succeeded = true, StatusCode = 204 };

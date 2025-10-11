@@ -31,7 +31,8 @@ public partial class ProductService
     // Finns en produkt i _products, vars ID inte är = requestId men vars namn är = requestNamn. Använda på CreateRequest då id valbart
     private bool IsDuplicateName(string requestName, string? requestId = null)
     {
-        return _products.Any(product => (requestId is null || product.Id != requestId && string.Equals(product.Name, requestName, StringComparison.OrdinalIgnoreCase)));
+        return _products.Any(product => string.Equals(product.Name, requestName, StringComparison.OrdinalIgnoreCase)
+            && (requestId is null || product.Id != requestId));
     }
 
 

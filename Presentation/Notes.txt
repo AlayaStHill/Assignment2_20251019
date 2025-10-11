@@ -27,6 +27,10 @@ public async Task<ProductServiceResult<Product>> SaveProductAsync(Product produc
 Branchen: 
 feat(productservice.helpers): add UpdateCategoryAsync and UpdateManufacturerAsync
 
+ProductService:
+refactor: update SaveProductAsync with helper-methods
+fix: place IsDuplicateNamen requestId = null after name-check to not cause incorrect true
+
 feat: add FormViewModelBase to minimera upprepad kod
 
 feat: – när du lägger till en ny funktionalitet
