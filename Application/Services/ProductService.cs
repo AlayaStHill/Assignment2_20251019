@@ -124,8 +124,7 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
             if (!ensureResult.Succeeded)
                 return ensureResult;
 
-            Product? existingProduct = _products.FirstOrDefault(product => product.Id == updateRequest.Id);
-            if (existingProduct == null)
+            if (FindExistingProduct(updateRequest.Id) is not Product existingProduct)
                 return new ServiceResult { Succeeded = false, StatusCode = 404, ErrorMessage = $"Produkten med Id {updateRequest.Id} kunde inte hittas" };
 
             // Kontrollera om produkten redan finns. Om true = existerar redan

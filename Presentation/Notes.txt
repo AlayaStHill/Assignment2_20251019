@@ -25,10 +25,7 @@ public async Task<ProductServiceResult<Product>> SaveProductAsync(Product produc
 
 ---------------------------------------------------------------
 Branchen: 
-refactor Productservice:
-feat: add helper partial class...med hjälpmetoder
-feat: add helpermethod ValidateRequest to ProductService.Helpers
-skapade ett interface IProductRequest som implementeas av PRoductCreateRequest och ProductUpdateRequest
+
 
 feat: add FormViewModelBase to minimera upprepad kod
 
