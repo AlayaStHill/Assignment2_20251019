@@ -7,4 +7,22 @@
         <Setter Property="FontStyle" Value="Italic" />
     </Style>
 
+
+
+    <Style x:Key="ReloadCancelButtonStyle" TargetType="Button">
+        <Setter Property="Content" Value="Ladda om" />
+        <Setter Property="Command" Value="{Binding RefreshCommand}" />
+        <Setter Property="Background" Value="LightBlue"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="FontSize" Value="10"/>
+
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding RefreshCommand.IsRunning}" Value="True">
+                <Setter Property="Content" Value="Avbryt" />
+                <Setter Property="Command" Value="{Binding RefreshCommand.CancelCommand}" />
+                <Setter Property="Background" Value="#F28B82"/>
+            </DataTrigger>
+        </Style.Triggers>
+    </Style>
+
 </ResourceDictionary>

@@ -22,7 +22,18 @@ public async Task<ProductServiceResult<Product>> SaveProductAsync(Product produc
 
 ---------------------------------------------------------------
 Branchen: 
-Refactor cancellation handling: let callers provide CancellationToken
+Cancellation handling ProductListViewModel: 
+- Add LoadCommand.Execute(null). Automaticcaly load the list on startup
+- Add catch (OperationCanceledException) to LoadAsync, to adress user 
+- Add RefreshAsync-method to ProductListViewModel to separate load and reload-command
+- Add HideStatusSoon to handle statusmeddelanden
+- Add Ladda om/Avbryt-button incomplete
+
+
+
+
+
+
 - Remove _cts field and Cancel() method from ProductService - cancel-call is not made from productservice
 - Update design so ProductListViewModel owns CancellationTokenSource 
 - Update IProductService methods to accept CancellationToken ct = default
