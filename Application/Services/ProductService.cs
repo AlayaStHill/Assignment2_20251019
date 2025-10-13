@@ -10,30 +10,21 @@ using Domain.Results;
 namespace ApplicationLayer.Services;
 public partial class ProductService(IRepository<Product> productRepository, IRepository<Category> categoryRepository, IRepository<Manufacturer> manufacturerRepository) : IProductService
 {
-    // fältets namn ska reflektera interfacet (vad det gör), inte implementationen (hur det görs)
     private readonly IRepository<Product> _productRepository = productRepository;
     private readonly IRepository<Category> _categoryRepository = categoryRepository;
     private readonly IRepository<Manufacturer> _manufacturerRepository = manufacturerRepository;
     private List<Product> _products = [];
-    // Gäller för hela klassen - pekar alltid på den senaste instansen som newats i metoderna. När Cancel anropas stoppas just den instansen..Token tar emot stoppsignalen och vidarebefodrar den till koden som använder den. 
-    private CancellationTokenSource _cts = null!;
     private bool _isLoaded;
 
-    public async Task<ServiceResult<Product>> SaveProductAsync(ProductCreateRequest createRequest) // MÅSTE FÅNGA UPP DATA = NULL I MAINWINDOW.XAML.CS 
+    public async Task<ServiceResult<Product>> SaveProductAsync(ProductCreateRequest createRequest, CancellationToken ct = default) // MÅSTE FÅNGA UPP DATA = NULL I MAINWINDOW.XAML.CS 
     {
-        // Skapar en ny lokal cts-instans och ger alltid en färsk token utan tidigare cancellation. using ser till att Dispose() körs automatiskt när metoden är klar.
-        using CancellationTokenSource cts = new CancellationTokenSource();
-        // Kopplar fältet till instansen
-        _cts = cts;
-
         try 
         {
-
             ServiceResult validationResult = ValidateRequest(createRequest);
             if (!validationResult.Succeeded)
                 return new ServiceResult<Product> { Succeeded = false, StatusCode = 400, ErrorMessage = "Produktfälten är inte korrekt ifyllda." };
 
-            ServiceResult ensureResult = await EnsureLoadedAsync();
+            ServiceResult ensureResult = await EnsureLoadedAsync(ct);
             if (!ensureResult.Succeeded)
                 return new ServiceResult<Product> { Succeeded = false, StatusCode = 500, ErrorMessage = ensureResult.ErrorMessage, Data = null };
 
@@ -44,35 +35,31 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
             Product newProduct = ProductFactory.MapRequestToProduct(createRequest);
             _products.Add(newProduct);
 
-            RepositoryResult saveResult = await _productRepository.WriteAsync(_products, _cts.Token);
+            RepositoryResult saveResult = await _productRepository.WriteAsync(_products, ct);
             if (!saveResult.Succeeded)
                 return saveResult.MapToServiceResultAs<Product>("Kunde inte spara till fil.");
 
             return new ServiceResult<Product> { Succeeded = true, StatusCode = 201, Data = newProduct };
         }
-        catch (Exception ex)
+        catch (OperationCanceledException) // cancelcommand via CancellationToken
         {
-            Cancel();
-            // Oväntat fel som uppstått i SaveProductAsync()
-            return new ServiceResult<Product> { Succeeded = false, StatusCode = 500, ErrorMessage = $"Det gick inte att spara produkten: {ex.Message}", Data = null };
+            return new ServiceResult<Product> { Succeeded = false, StatusCode = 500, ErrorMessage = "Sparande avbröts" };
         }
-        finally
+        catch (Exception ex) // Oväntat fel som uppstått i SaveProductAsync()
         {
-            _cts.Dispose();
+            return new ServiceResult<Product> { Succeeded = false, StatusCode = 500, ErrorMessage = $"Det gick inte att spara produkten: {ex.Message}", Data = null };
         }
     }
 
-    public async Task<ServiceResult> EnsureLoadedAsync()
+    // OperationCanceledException centraliserad till EnsureLoaded (hanterar det i sin catch)
+    public async Task<ServiceResult> EnsureLoadedAsync(CancellationToken ct) 
     {
         if (_isLoaded)
             return new ServiceResult { Succeeded = true, StatusCode = 200 };
 
-        // Säkerställer att _cts inte är null vid anropning av ReadAsync eftersom EnsureLoaded är publik. Om _cts är null -> skapa en ny
-        _cts ??= new CancellationTokenSource();
-
         try
         {
-            RepositoryResult<IEnumerable<Product>>? loadResult = await _productRepository.ReadAsync(_cts.Token);
+            RepositoryResult<IEnumerable<Product>>? loadResult = await _productRepository.ReadAsync(ct);
             if (!loadResult.Succeeded)
                 return loadResult.MapToServiceResult("Ett okänt fel uppstod vid filhämtning");
 
@@ -91,44 +78,13 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
         {
             return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = $"Fel vid filhämtning: {ex.Message}" };
         }
-
-
     }
 
-    //public async Task<ServiceResult<IEnumerable<Product>>> GetProductsAsync()
-    //{
-    //    try // Fånga ev. IO-relaterade exceptions från EnsureLoadedAsync. ReadAsync fångar JsonException
-    //    {
-    //        _cts = new CancellationTokenSource();
-
-    //        ServiceResult ensureResult = await EnsureLoadedAsync();
-    //        if (!ensureResult.Succeeded)
-    //            return new ServiceResult<IEnumerable<Product>> { Succeeded = false, StatusCode = 500, ErrorMessage = ensureResult.ErrorMessage, Data = [] };
-
-    //        // spreadoperator, tar den nya listan och sprider det i den nya. Istället för att loopa igenom med foreach tar den hela listan på en gång
-    //        return new ServiceResult<IEnumerable<Product>> { Succeeded = true, StatusCode = 200, Data = [.. _products] };
-    //    }
-    //    catch (Exception ex)
-    //    {
-    //        Cancel();
-    //        // Tömmer data som finns sparad i listan, så att den inte innehåller gammal information efter ett fel.
-    //        _products = [];
-    //        return new ServiceResult<IEnumerable<Product>> { Succeeded = false, StatusCode = 500, ErrorMessage = $"Fel vid filhämtning: {ex.Message}", Data = [] };
-    //    }
-    //    finally
-    //    {
-    //        _cts.Dispose();
-    //    }
-
-    //}
 
     // Behöver inte try-catch – anropar bara EnsureLoaded/ReadAsync som redan hanterar felen
-    public async Task<ServiceResult<IEnumerable<Product>>> GetProductsAsync()
+    public async Task<ServiceResult<IEnumerable<Product>>> GetProductsAsync(CancellationToken ct = default)
     {
-        using CancellationTokenSource cts = new CancellationTokenSource();
-        _cts = cts;
-
-        var ensureResult = await EnsureLoadedAsync();
+        ServiceResult ensureResult = await EnsureLoadedAsync(ct);
         if (!ensureResult.Succeeded)
             return new ServiceResult<IEnumerable<Product>> { Succeeded = false, StatusCode = 500, ErrorMessage = ensureResult.ErrorMessage, Data = [] };
 
@@ -137,18 +93,16 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
     }
 
 
-    public async Task<ServiceResult> UpdateProductAsync(ProductUpdateRequest updateRequest)
+    public async Task<ServiceResult> UpdateProductAsync(ProductUpdateRequest updateRequest, CancellationToken ct = default)
     {
         try 
         {
-            _cts = new CancellationTokenSource();
-
             ServiceResult validationResult = ValidateRequest(updateRequest); 
             if (!validationResult.Succeeded)
                 return validationResult;
 
 
-            ServiceResult ensureResult = await EnsureLoadedAsync();
+            ServiceResult ensureResult = await EnsureLoadedAsync(ct);
             if (!ensureResult.Succeeded)
                 return ensureResult;
 
@@ -165,7 +119,7 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
                 return categoryResult;
 
             // Hämta eller skapa tillverkare enbart om ManufacturerName inskickat
-            ServiceResult manufacturerResult = await UpdateManufacturerAsync(existingProduct, updateRequest.CategoryName);
+            ServiceResult manufacturerResult = await UpdateManufacturerAsync(existingProduct, updateRequest.ManufacturerName);
             if (!categoryResult.Succeeded)
                 return manufacturerResult;
 
@@ -173,34 +127,30 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
             existingProduct.Name = updateRequest.Name;
             existingProduct.Price = updateRequest.Price;
 
-            RepositoryResult saveResult = await _productRepository.WriteAsync(_products, _cts.Token);
+            RepositoryResult saveResult = await _productRepository.WriteAsync(_products, ct);
             if (!saveResult.Succeeded)
                 return saveResult.MapToServiceResult("Ett okänt fel uppstod vid filsparning");
 
             // Operationen lyckas
             return new ServiceResult { Succeeded = true, StatusCode = 204 };
-
+        }
+        catch (OperationCanceledException)
+        {
+            return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = "Uppdatering avbröts" };
         }
         catch (Exception ex)
         {
-            Cancel();
             return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = $"Det gick inte att uppdatera produkten: {ex.Message}" };
-        }
-        finally
-        {
-            _cts.Dispose();
         }
     }
 
 
 
-    public async Task<ServiceResult> DeleteProductAsync(string id)
+    public async Task<ServiceResult> DeleteProductAsync(string id, CancellationToken ct = default)
     {
         try 
         {
-            _cts = new CancellationTokenSource();
-
-            ServiceResult ensureResult = await EnsureLoadedAsync();
+            ServiceResult ensureResult = await EnsureLoadedAsync(ct);
             if (!ensureResult.Succeeded)
                 return ensureResult;
 
@@ -211,54 +161,21 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
             _products.Remove(productToDelete);
 
             // Spara till fil, annars uppdateras inte listan och ändringen ligger bara i minnet och försvinner när programmet stängs.
-            RepositoryResult repoSaveResult = await _productRepository.WriteAsync(_products, _cts.Token);
+            RepositoryResult repoSaveResult = await _productRepository.WriteAsync(_products, ct);
             if (!repoSaveResult.Succeeded)
                 return repoSaveResult.MapToServiceResult("Ett okänt fel uppstod vid filsparning");
 
             //Operationen lyckades
             return new ServiceResult { Succeeded = true, StatusCode = 204 };
         }
+        catch (OperationCanceledException)
+        {
+            return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = "Borttagning avbröts" };
+        }
         catch (Exception ex)
         {
-            Cancel();
             return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = $"Det gick inte att ta bort produkten: {ex.Message}" };
         }
-        finally
-        {
-            _cts.Dispose();
-        }
     }
-
-
-    // Cancel-button aktiveras bara när "nedladdning" pågår, men ändå säkra upp för att skydda mot ett scenario där Cancel anropas då _cts är disposed eller fortfarande null innan någon metod körs
-    public void Cancel()
-    {
-        if (_cts != null && !_cts.IsCancellationRequested)
-        {
-            try
-            {
-                _cts.Cancel();
-            }
-            // kastas om _cts är disposad då Cancel() anropas
-            catch (ObjectDisposedException)
-            {
-                // neutraliserat undantag, programmet kraschar ej och kan köra vidare om en ny metod anropas
-            }
-        }
-    }
-
-
-
- 
 }
 
-
-tabort cancel
-
-        byta dispose i finally till using
-
-    using var cts = new CancellationTokenSource();
-_cts = cts;
-    // Dispose körs automatiskt när metoden lämnar scope
-
-    •	själv skapa och äga en CancellationTokenSource i ViewModel och skicka in cts.Token till din service-metod, 

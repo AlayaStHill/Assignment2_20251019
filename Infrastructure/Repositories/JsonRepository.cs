@@ -40,29 +40,6 @@ public class JsonRepository<T> : IRepository<T> where T : class
     }
 
 
-
-    // CancellationToken cancellationToken här är kopplad till CancellationTokenSourse i ProductService, varifrån dessa metoder kan avbrytas
-    //public async Task<RepositoryResult<IEnumerable<T>>> ReadAsync(CancellationToken cancellationToken)
-    //{
-    //    try
-    //    {
-    //        EnsureInitialized(_dataDirectory, _filePath);
-
-    //        string json = await File.ReadAllTextAsync(_filePath, cancellationToken);
-
-    //        List<T>? entities = JsonSerializer.Deserialize<List<T>>(json, _jsonOptions);
-    //        return RepositoryResult<IEnumerable<T>>.OK(entities ?? []);
-    //    }
-    //    catch (JsonException ex)
-    //    {
-    //        // Om JSON är ogiltig, återställ filen till en giltig tom lista
-    //        await File.WriteAllTextAsync(_filePath, "[]", cancellationToken);
-
-    //        return RepositoryResult<IEnumerable<T>>.InternalServerError($"Ogiltig JSON: {ex.Message}");
-    //    }
-    //}
-
-
     public async Task<RepositoryResult<IEnumerable<T>>> ReadAsync(CancellationToken cancellationToken)
     {
         try

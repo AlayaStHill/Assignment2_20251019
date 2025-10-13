@@ -6,7 +6,6 @@ using Domain.Entities;
 using Domain.Helpers;
 using Domain.Results;
 using System.Linq;
-
 namespace ApplicationLayer.Services;
 
 public partial class ProductService
@@ -36,12 +35,17 @@ public partial class ProductService
     }
 
 
-    private async Task<ServiceResult> UpdateCategoryAsync(Product existingProduct, string? categoryName)
+    private async Task<ServiceResult> UpdateCategoryAsync(Product existingProduct, string? categoryName, CancellationToken ct = default)
     {
-        if (!string.IsNullOrWhiteSpace(categoryName))
+        if (string.IsNullOrWhiteSpace(categoryName))
+        {
+            existingProduct.Category = null;
+        }
+
+        else
         {
             RepositoryResult<Category> categoryResult = await _categoryRepository.GetOrCreateAsync(category => string.Equals(category.Name, categoryName, StringComparison.OrdinalIgnoreCase),
-                () => new Category { Id = Guid.NewGuid().ToString(), Name = categoryName },_cts.Token);
+                () => new Category { Id = Guid.NewGuid().ToString(), Name = categoryName }, ct);
 
             if (!categoryResult.Succeeded || categoryResult.Data == null)
                 return categoryResult.MapToServiceResult("Kunde inte hämta eller skapa kategori.");
@@ -52,15 +56,18 @@ public partial class ProductService
         return new ServiceResult { Succeeded = true, StatusCode = 200 };
     }
 
-    private async Task<ServiceResult> UpdateManufacturerAsync(Product existingProduct, string? manufacturerName)
+    private async Task<ServiceResult> UpdateManufacturerAsync(Product existingProduct, string? manufacturerName, CancellationToken ct = default)
     {
-        if (!string.IsNullOrWhiteSpace(manufacturerName))
+        if (string.IsNullOrWhiteSpace(manufacturerName))
         {
-            var name = manufacturerName.Trim();
+            existingProduct.Manufacturer = null;
+        }
 
-            var manufacturerResult = await _manufacturerRepository.GetOrCreateAsync(manufacturer => string.Equals(manufacturer.Name, manufacturerName, StringComparison.OrdinalIgnoreCase),
+        else 
+        {
+            RepositoryResult<Manufacturer> manufacturerResult = await _manufacturerRepository.GetOrCreateAsync(manufacturer => string.Equals(manufacturer.Name, manufacturerName, StringComparison.OrdinalIgnoreCase),
                 () => new Manufacturer { Id = Guid.NewGuid().ToString(), Name = manufacturerName },
-                _cts.Token);
+                ct);
 
             if (!manufacturerResult.Succeeded || manufacturerResult.Data == null)
                 return manufacturerResult.MapToServiceResult("Kunde inte hämta eller skapa tillverkare.");

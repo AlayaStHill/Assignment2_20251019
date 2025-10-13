@@ -14,17 +14,26 @@ public partial class ProductListViewModel : ObservableObject
     private readonly IViewNavigationService _viewNavigationService;
     private readonly IProductService _productService;
 
+    // XAML kan bara binda publika properties. Readonly - värdet sätts i konstruktorn och kommandon ändras aldrig = ej ObservableProperty. ASYNCRelayCommand (-> LoadASYNC), kan skicka med en CancellationToken.
+    public IAsyncRelayCommand LoadCommand { get; } // Initial laddning
+    public IAsyncRelayCommand RefreshCommand { get; } // Omladdning
+
     public ProductListViewModel(IViewNavigationService navigationService, IProductService productService)
     {
         _viewNavigationService = navigationService;
         _productService = productService;
 
-        /* Konstruktorn bygger upp objektet ProductListViewModel när programmet startar och måste returnera en konkret instans direkt. Dvs Task och await kan inte användas,
-           då returvärdet Task inte är ett färdigt objekt utan ett löfte om ett färdigt objekt senare. Objektet behöver visa en lista så snart vyn visas, laddningsprocessen måste därför startas direkt när viewmodeln skapas (därav initierar man laddningen i ctor).  Async används för att förhindra att UI:t fryser under hämtningen.
-           _, gör det möjligt att starta en asynkron metoden i bakgrunden i konstruktorn eftersom det signalerar: ignorera den returnerade Tasken och tillåt konstruktorn att leverera ett färdigt objekt direkt. Konstruktorn har redan skapat ett objekt med en lista, men LoadAsync färdigställer innehållet i listan bakgrunden. I UI kan listan alltså först vara tom.
-        */
-        _ = LoadAsync(); 
+        // AsyncRelay.. injicerar CancellationToken i execute-metoden LoadAsync (den metod som ska exekveras när programmet startar)
+        LoadCommand = new AsyncRelayCommand(LoadAsync);
+        // Återanvänder samma execute
+        RefreshCommand = new AsyncRelayCommand(LoadAsync);      
     }
+
+
+    // Exponera en read-only ObservableCollection<Product> och uppdatera innehållet in-place.
+    // varför inte med observableproperty
+    //public ObservableCollection<Product> Products { get; } = new();
+
 
     [ObservableProperty]
     // ObservableCollection = lista som implementerar INotifyCollectionChanged (signalerar när innehållet förändras) och INotifyPropertyChanged (signalerar när propertyn byts ut mot en ny instans - propertyn pekar på en ny lista)
@@ -39,7 +48,7 @@ public partial class ProductListViewModel : ObservableObject
     [ObservableProperty]
     private string? _statusColor;
 
-    public async Task PopulateProductListAsync()
+    public async Task PopulateProductListAsync(CancellationToken ct = default)
     {
         ServiceResult<IEnumerable<Product>> loadResult = await _productService.GetProductsAsync();
         // loadresult är inte null, returnerar alltid ett nytt ServiceResult-objekt i GetProducts
@@ -54,7 +63,8 @@ public partial class ProductListViewModel : ObservableObject
     }
 
     // mellanlager, ansvarsseparation. styr när laddning sker, fångar tekniska/oförutsedda fel
-    private async Task LoadAsync() 
+    // 
+    private async Task LoadAsync(CancellationToken ct) 
     {
         try
         {   // logiken: hämtar/uppdaterar data, hanterar affärslogiska/förväntade fel, test- och återanvändbar
@@ -117,9 +127,28 @@ public partial class ProductListViewModel : ObservableObject
     }
 }
 
+/*
+CANCELLATIONTOKEN-flöde:
+ProductListViewModel -> ProductService:
+1. AsyncRelayCommand skapar en CancellationTokenSource och skickar in cts.Token till LoadAsync (som måste ha CancellationToken som parameter - ej default).
+2. LoadAsync skickar vidare samma ct till ProductService via PopulateListAsync:
+ServiceResult<IEnumerable<Product>> loadResult = await _productService.GetProductsAsync(ct);
 
-/* 
-Ska statusmeddelande försvinna efter ett  tag?
+ProductService -> JsonRepository:
+3. GetProductsAsync anropar EnsureLoaded(ct), som skickar token vidare till JsonRepository.ReadAsync(ct).
+
+Om användaren trycker Avbryt kallar LoadCommand.CancelCommand.Execute(null)) cts.Cancel(), vilket gör att Token blir canceled. 
+Nästa gång en async metod, som accepterar token (cancellation-aware)anropas, kastas OperationCanceledException.
+
+OperationCanceledException bubblar vidare till EnsureLoaded - som fångar det i sin catch (OperationCanceledException)
+och returnerar ErrorMessage: "Hämtning avbröts".
+*/
+
+
+
+
+/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Statusmeddelande Produkten togs bort måste försvinna efter ett  tag. Hur göra?
 
 StatusMessage = "Produkten har tagits bort";
 StatusColor = "green";

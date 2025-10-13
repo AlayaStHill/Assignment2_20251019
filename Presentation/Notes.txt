@@ -22,12 +22,20 @@ public async Task<ProductServiceResult<Product>> SaveProductAsync(Product produc
 
 ---------------------------------------------------------------
 Branchen: 
+Refactor cancellation handling: let callers provide CancellationToken
+- Remove _cts field and Cancel() method from ProductService - cancel-call is not made from productservice
+- Update design so ProductListViewModel owns CancellationTokenSource 
+- Update IProductService methods to accept CancellationToken ct = default
+- Centralize OperationCanceledException handling in EnsureLoadedAsync - catch(Operation-canceledException) 
+- Remove redundant try-catch from GetProductsAsync
 
- use 'using var' for CTS disposal
+fix(ProductService.Helpers): add if-else-statement to UpdateCategoryAsync and UpdateManufacturerAsync to be able to remove already assigned value
+
+flyttar cancel-logiken toll viewmodel och tar bort cancel-metod i productservice
+
+avoid boilerplate with asyncrelaycommand in viewmodel (alltså tar bort upprepning av cts i alla metoder)
 
 
-
-refactor(ProductService): update with helper-methods complete
 
 
 feat: add FormViewModelBase to minimera upprepad kod
@@ -38,13 +46,44 @@ refactor: – när du omstrukturerar utan ny funktion
 docs: – när du ändrar dokumentation
 test: – när du lägger till eller ändrar tester
 
-CANCELLATIONTOKEN:
-.NET-standard: den som startar operationen äger också token och kan avbryta.
-I ditt fall: användaren av applikationen (via UI:t) → till exempel trycka på en “Cancel”-knapp.
-Effekten: alla async-anrop i service och repo som tar emot token får en OperationCanceledException och slutar köra.
+CANCELLATIONTOKEN ATT GÖRA:
+1. ändra interface med CancellationToken ct = default
+2. Uppdatera Delete/Update/Save/Get with CancellationToken ct = default. EnsureLoaded with ct centralize ... 
+3 ta bort Cancel-method och _cts från productservice
+4. add AsyncRelayCommand to productlistviewmodel, som injicerar en token i execute-metoden och avbryt via dess CancelCommand.
+5. Bind loadcommand and refreshcomman do execute-method LoadAsync
+6. add cNCE-BUTTON
+
+Byt avbryt-knapp till tillbaka
+
+Default-token (CancellationToken ct = default): Trycker användaren inte på Cancel-knappen blir ct -> default(CancellationToken), 
+vilket innebär att ct.IsCancellationRequested alltid är false.
+
+AsyncRelayCommand injicerar automatiskt en token i execute-metoden LoadAsync.
+Effekten:
+
+
+ <!-- Spara-knapp -->
+<Button Content="Spara" Command="{Binding SaveCommand}" />
+
+<!-- Avbryt pågående Save (cancellation), inte navigationen -->
+<Button Content="Avbryt sparande" Command="{Binding SaveCommand.CancelCommand}" />
+
+<!-- Navigerings-avbryt (tillbaka till listan) -->
+<Button Content="Tillbaka" Command="{Binding CancelCommand}" />
+
+AsyncRelayCommand skapar och äger CTS internt och sköter Cancel() och Dispose() åt dig.
+
 ----------------------------------------------------------------------
 
 
+CommunityToolkit AsyncRelayCommand med signaturen Task LoadAsync(CancellationToken ct), injicerar kommandot en token automatiskt när du anropar new AsyncRelayCommand(LoadAsync).
+
+Refactor CancellationToken:
+.NET-standard: den som startar operationen äger avbryt, alltså användaren av applikationen ex. en Avbryt-knapp i UI. 
+
+Eftersom EnsureLoadedAsync är den metod i ProductService som alltid först pratar med repot för att läsa från fil (via anrop till GetProductsAsync), så är den satt att hantera OperationCanceledException i och med att inparametern ct inte är satt som default / behöver den stöd för avbryt (luddigt, förtydliga kort och koncist).
+De andra metoderna tar ct som inparameter för att kunna vidarebefodra ett cancel-command (token) till EnsureLoaded som sedan avbryter den pågående operationen.
 
 
 
@@ -91,3 +130,11 @@ Repository: tekniskt skydd (filåtkomst, skrivfel)
 Service: affärslogiskt skydd (t.ex. “produkt finns redan”)
 
 ViewModel: användarskydd (UI’t kraschar inte)
+
+
+---------------------------------------------------
+CancellationTokenändring i presentation:
+Vad är LoadCommand.Execute(null)? 
+Det startar ditt AsyncRelayCommand direkt vid uppstart. Fördelen: kommandot skapar en intern CancellationTokenSource, sätter IsRunning och exponerar CancelCommand så att du kan avbryta just den körningen. Om du i stället kör _ = LoadAsync() i konstruktorn går laddningen utanför kommandot och kan inte avbrytas via CancelCommand.
+
+(autoladda, men via kommandot så att Cancel fungerar på första laddningen.).
