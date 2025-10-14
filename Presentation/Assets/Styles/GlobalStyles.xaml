@@ -19,7 +19,7 @@
         <Style.Triggers>
             <DataTrigger Binding="{Binding RefreshCommand.IsRunning}" Value="True">
                 <Setter Property="Content" Value="Avbryt" />
-                <Setter Property="Command" Value="{Binding RefreshCommand.CancelCommand}" />
+                <Setter Property="Command" Value="{Binding CancelRefreshCommand}" />
                 <Setter Property="Background" Value="#F28B82"/>
             </DataTrigger>
         </Style.Triggers>

@@ -22,29 +22,20 @@ public async Task<ProductServiceResult<Product>> SaveProductAsync(Product produc
 
 ---------------------------------------------------------------
 Branchen: 
-Cancellation handling ProductListViewModel: 
+Refactor
+fix: make Avbryt-button responsive and actually cancel refresh - clean up layout
+
+Add CancelRefresh-method in ProductListViewModel that directly calls RefreshCommand.Cancel() and bind Avbryt-button to it for reliable cancel. 
+Add await Task.Yield to let the UI render before starting the reload-work, so buttons are clickable immediately.
+In PopulateProductListAsync, yield after ProductList.Clear and check ct.ThrowIfCancellationRequested() while adding items to keep UI responsive and cancelable. 
+
+
+Redan commitat:
 - Add LoadCommand.Execute(null). Automaticcaly load the list on startup
 - Add catch (OperationCanceledException) to LoadAsync, to adress user 
 - Add RefreshAsync-method to ProductListViewModel to separate load and reload-command
 - Add HideStatusSoon to handle statusmeddelanden
 - Add Ladda om/Avbryt-button incomplete
-
-
-
-
-
-
-- Remove _cts field and Cancel() method from ProductService - cancel-call is not made from productservice
-- Update design so ProductListViewModel owns CancellationTokenSource 
-- Update IProductService methods to accept CancellationToken ct = default
-- Centralize OperationCanceledException handling in EnsureLoadedAsync - catch(Operation-canceledException) 
-- Remove redundant try-catch from GetProductsAsync
-
-fix(ProductService.Helpers): add if-else-statement to UpdateCategoryAsync and UpdateManufacturerAsync to be able to remove already assigned value
-
-flyttar cancel-logiken toll viewmodel och tar bort cancel-metod i productservice
-
-avoid boilerplate with asyncrelaycommand in viewmodel (alltså tar bort upprepning av cts i alla metoder)
 
 
 
@@ -56,22 +47,6 @@ fix: – när du rättar ett fel
 refactor: – när du omstrukturerar utan ny funktion
 docs: – när du ändrar dokumentation
 test: – när du lägger till eller ändrar tester
-
-CANCELLATIONTOKEN ATT GÖRA:
-1. ändra interface med CancellationToken ct = default
-2. Uppdatera Delete/Update/Save/Get with CancellationToken ct = default. EnsureLoaded with ct centralize ... 
-3 ta bort Cancel-method och _cts från productservice
-4. add AsyncRelayCommand to productlistviewmodel, som injicerar en token i execute-metoden och avbryt via dess CancelCommand.
-5. Bind loadcommand and refreshcomman do execute-method LoadAsync
-6. add cNCE-BUTTON
-
-Byt avbryt-knapp till tillbaka
-
-Default-token (CancellationToken ct = default): Trycker användaren inte på Cancel-knappen blir ct -> default(CancellationToken), 
-vilket innebär att ct.IsCancellationRequested alltid är false.
-
-AsyncRelayCommand injicerar automatiskt en token i execute-metoden LoadAsync.
-Effekten:
 
 
  <!-- Spara-knapp -->
@@ -100,8 +75,10 @@ De andra metoderna tar ct som inparameter för att kunna vidarebefodra ett cance
 
 ATT GÖRA:
 --------------
-Ta tag i cancellationtoken och cancel ändringar
-bryt ut och skapa hjälpmetoder för att korta ned metoder
+Ändra Avbryt till Tillbaka i add- och editview
+PRodukten sparas trots att inte pris är angett. Pris textbox blir röd?? i listan är priset satt till 0
+Lägg till HideStatusSoon i add och edit
+
 
 Skapa en FormViewModelBase - cancel och save-metoderna-duplicering.. ärver
 Skapa en StatusViewModelBase alla tre metoder plocka bor statusmeddelanden efter ett tag..ärver

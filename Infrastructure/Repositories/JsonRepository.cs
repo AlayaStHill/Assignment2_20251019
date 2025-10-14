@@ -40,13 +40,13 @@ public class JsonRepository<T> : IRepository<T> where T : class
     }
 
 
-    public async Task<RepositoryResult<IEnumerable<T>>> ReadAsync(CancellationToken cancellationToken)
+    public async Task<RepositoryResult<IEnumerable<T>>> ReadAsync(CancellationToken ct)
     {
         try
         {
             EnsureInitialized(_dataDirectory, _filePath);
 
-            string json = await File.ReadAllTextAsync(_filePath, cancellationToken);
+            string json = await File.ReadAllTextAsync(_filePath, ct);
 
             List<T>? entities = JsonSerializer.Deserialize<List<T>>(json, _jsonOptions);
             return RepositoryResult<IEnumerable<T>>.OK(entities ?? []);
@@ -56,7 +56,7 @@ public class JsonRepository<T> : IRepository<T> where T : class
         catch (OperationCanceledException) { throw; } // bubbla vidare så avbryt via cancellationtoken fungerar
         catch (JsonException ex)
         {
-            await File.WriteAllTextAsync(_filePath, "[]", cancellationToken);
+            await File.WriteAllTextAsync(_filePath, "[]", ct);
             return RepositoryResult<IEnumerable<T>>.InternalServerError($"Ogiltig JSON: {ex.Message}");
         }
         catch (IOException ex)
@@ -73,13 +73,13 @@ public class JsonRepository<T> : IRepository<T> where T : class
         }
     }
 
-    public async Task<RepositoryResult> WriteAsync(IEnumerable<T> entities, CancellationToken cancellationToken)
+    public async Task<RepositoryResult> WriteAsync(IEnumerable<T> entities, CancellationToken ct)
     {
         try
         {
             string json = JsonSerializer.Serialize(entities, _jsonOptions);
             // fungerar med små filer. Stream tar bara 100 första delar upp stora filen i olika portioner effektivare- för systemet lättare med flera småbitar, kan deka ut i processorn i flera olika trådar istället för en enda stor tråd.
-            await File.WriteAllTextAsync(_filePath, json, cancellationToken); 
+            await File.WriteAllTextAsync(_filePath, json, ct); 
 
             return RepositoryResult.NoContent();
 

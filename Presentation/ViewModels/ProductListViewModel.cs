@@ -13,7 +13,7 @@ public partial class ProductListViewModel : ObservableObject
 {
     private readonly IViewNavigationService _viewNavigationService;
     private readonly IProductService _productService;
-    // Fält som gäller för hela klassen. Refererar alltid till den senaste instansen av CancellationTokenSource som skapats i HideStatusSoon.  När statusCts.Cancel() anropas (då ett nytt statusmeddelande visas) avbryts just den instansen, via token i Task.Delay.. null tills första gången HideStatusSoon() körs.
+    // Refererar alltid till den senaste instansen av CancellationTokenSource som skapats i HideStatusSoon. När statusCts.Cancel() anropas (då ett nytt statusmeddelande visas) avbryts just den instansen, via token i Task.Delay.. Är null tills första gången HideStatusSoon() körs.
     private CancellationTokenSource? _statusCts;
 
     // XAML kan bara binda publika properties. Readonly - värdet sätts i konstruktorn och kommandon ändras aldrig = ej ObservableProperty. ASYNCRelayCommand (-> LoadASYNC), kan skicka med en CancellationToken.
@@ -29,11 +29,11 @@ public partial class ProductListViewModel : ObservableObject
         // Att wrappa en async-metod i ett kommando fungerar likt _ (fire-and-forget), konstruktorn behöver inte vänta
         LoadCommand = new AsyncRelayCommand(LoadAsync);
         RefreshCommand = new AsyncRelayCommand(RefreshAsync);
+        //AbortCommand = new AsyncRelayCommand(AbortAsync);
 
         // LoadCommand körs direkt när ViewModel skapas, dvs laddning av listan  
         LoadCommand.Execute(null);
     }
-
 
     // Uppdaterar innehållet i samma instans istället för att ersätta hela listan (som med användning av [ObservableProperty]). ObservableCollection notifierar UI via INotifyCollectionChanged.
     public ObservableCollection<Product> ProductList { get; } = new();
@@ -53,8 +53,9 @@ public partial class ProductListViewModel : ObservableObject
     // Ingen ct skickas in som parameter. Metoden sköter sin egen avbrytlogik
     private async Task HideStatusSoon(int ms = 3000)
     {
-        // Avbryt eventuell tidigare timer = aldrig två timers igång samtidigt.
-        _statusCts?.Cancel(); 
+        // Avbryt eventuell tidigare timer = aldrig två timers igång samtidigt. Dispose avlastar operativsystemet direkt från att hålla liv i onödiga resurser, tills garbage collector städar.  
+        _statusCts?.Cancel();
+        _statusCts?.Dispose();
         // Skapa en ny cts-instans som gäller för just den här pågående väntan. Fältet refererar nu till denna nya instans 
         _statusCts = new CancellationTokenSource();
         // Hämtar en token från den nya instansen (via fältet). Tokenen är bara en kopia som används lokalt här, men är kopplad till _statusCts.
@@ -72,13 +73,13 @@ public partial class ProductListViewModel : ObservableObject
         catch (TaskCanceledException)
         {
             // Ignorera – det betyder bara att ett nytt statusmeddelande avbröt den gamla väntan.
-
         }
     }
 
+    // logiken: hämtar/uppdaterar data, hanterar affärslogiska/förväntade fel, test- och återanvändbar
     public async Task PopulateProductListAsync(CancellationToken ct = default)
     {
-        ServiceResult<IEnumerable<Product>> loadResult = await _productService.GetProductsAsync();
+        ServiceResult<IEnumerable<Product>> loadResult = await _productService.GetProductsAsync(ct);
 
         // loadresult är inte null, returnerar alltid ett nytt ServiceResult-objekt i GetProducts
         if (!loadResult.Succeeded)
@@ -90,14 +91,19 @@ public partial class ProductListViewModel : ObservableObject
             _ = HideStatusSoon();
             return;
         }
-        // Data från fil kan vara null (inget alls) eller tom (listan innehåller inga element)
-        //ProductList = new ObservableCollection<Product>(loadResult.Data ?? []);
 
-        //?????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
-    
+        // Ersätter inte ProductList-instansen utan fyller på samma lista. Tom lista så att loopen inte kraschar om Data är null. 
         ProductList.Clear();
+
+        // Låt UI visa att listan blev tom (och ta emot klick) ?????????????????????????
+        await Task.Yield();
+
         foreach (Product product in loadResult.Data ?? [])
+        {
+            // Gör appen mer responsiv  - loopen avbryts snabbt efter Avbryt. Inte nödvändigt med få objekt (prestanda?)
+            ct.ThrowIfCancellationRequested(); 
             ProductList.Add(product);
+        }
     }
 
     // Körs av Load-kommandon. CancellationToken injiceras automatiskt av AsyncRelayCommand. 
@@ -105,20 +111,7 @@ public partial class ProductListViewModel : ObservableObject
     {
         try
         {
-            IsLoading = true;  
-            StatusMessage = "Laddar...";
-            // TextBlocken använder sin default-foreground, som ärvs från appens tema
-            StatusColor = null;
-            _ = HideStatusSoon();
-
-            // logiken: hämtar/uppdaterar data, hanterar affärslogiska/förväntade fel, test- och återanvändbar
-            await PopulateProductListAsync();
-
-            IsLoading = false;
-            
-            StatusMessage = $"Klar. {ProductList.Count} produkter."; 
-            StatusColor = "green";
-            _ = HideStatusSoon(); 
+            await PopulateProductListAsync(ct);
         }
         // OperationCanceledException fångas här för att ge feedback till användaren. OperationCanceledException i ProductService.EnsureLoaded stoppar själva arbetsprocessen.
         catch (OperationCanceledException) 
@@ -127,7 +120,8 @@ public partial class ProductListViewModel : ObservableObject
             StatusColor = "red";
             _ = HideStatusSoon();
         }
-        catch (Exception ex) // Fångar tekniska/oförutsedda fel
+        // Fångar tekniska/oförutsedda fel
+        catch (Exception ex) 
         {
             StatusMessage = $"Ett oväntat fel uppstod: {ex.Message}";
             StatusColor = "red";
@@ -139,23 +133,41 @@ public partial class ProductListViewModel : ObservableObject
     {
         try
         {
+            IsLoading = true;
             StatusMessage = "Laddar om...";
             StatusColor = "black";
 
-            // Simulerar fördröjning för att användaren ska se "laddar"
+            // Simulerar fördröjning i laddningen av listan 
             await Task.Delay(3000, ct);
 
             await PopulateProductListAsync(ct);
-            StatusMessage = "Produktlistan har laddats om.";
+
+            int count = ProductList.Count;
+            string plural = count == 1 ? "produkt" : "produkter";
+
+            StatusMessage = $"Listan är uppdaterad. {count} {plural}."; // Försvinner inte varför
             StatusColor = "green";
             _ = HideStatusSoon();
-
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) // Fångar CancelRefresh
         {
             StatusMessage = "Omladdning avbröts.";
             StatusColor = "red";
             _ = HideStatusSoon();
+        }
+        // Garanterar att UI inte "fastnar" i laddning-läge
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    [RelayCommand]
+    private void CancelRefresh()
+    {
+        if (RefreshCommand.IsRunning)
+        {
+            RefreshCommand.Cancel();
         }
     }
 
@@ -229,20 +241,3 @@ OperationCanceledException bubblar vidare till EnsureLoaded - som fångar det i 
 och returnerar ErrorMessage: "Hämtning avbröts".
 */
 
-
-
-
-/* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-Statusmeddelande Produkten togs bort måste försvinna efter ett  tag. Hur göra?
-
-StatusMessage = "Produkten har tagits bort";
-StatusColor = "green";
-_ = HideStatusSoon(3000);
-
-private async Task HideStatusSoon(int ms = 3000)
-{
-    await Task.Delay(ms);
-    StatusMessage = null;
-    StatusColor = null;
-}
-*/
