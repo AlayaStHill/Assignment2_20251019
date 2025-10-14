@@ -9,28 +9,15 @@ using Presentation.Interfaces;
 
 namespace Presentation.ViewModels;
 
-public partial class ProductAddViewModel : ObservableObject
+public partial class ProductAddViewModel(IViewNavigationService viewNavigationService, IProductService productService) : StatusViewModelBase
 {
-    private readonly IViewNavigationService _viewNavigationService;
-    private readonly IProductService _productService;
-
-    public ProductAddViewModel(IViewNavigationService viewNavigationService, IProductService productService)
-    {
-        _viewNavigationService = viewNavigationService;
-        _productService = productService;
-    }
-
+    private readonly IViewNavigationService _viewNavigationService = viewNavigationService;
+    private readonly IProductService _productService = productService;
     [ObservableProperty]
     private ProductCreateRequest _productData = new();
 
     [ObservableProperty]
     private string _title = "Ny Produkt";
-
-    [ObservableProperty]
-    private string? _statusMessage;
-
-    [ObservableProperty]
-    private string? _statusColor;
 
     [RelayCommand]
     private async Task Save() 
@@ -38,26 +25,22 @@ public partial class ProductAddViewModel : ObservableObject
         try
         {
             // Defense in depth: även om ProductService validerar fälten, en snabb kontroll här för att ge direkt feedback till användaren,  utan onödigt anrop till fil. 
-            if (string.IsNullOrWhiteSpace(ProductData.Name) || ProductData.Price < 0)
+            if (string.IsNullOrWhiteSpace(ProductData.Name) || ProductData.Price <= 0)
             {
-                StatusMessage = "Fälten är inte korrekt ifyllda.";
-                StatusColor = "red";
+                SetStatus("Fälten är inte korrekt ifyllda.", "red");
                 return;
             }
-
 
             ServiceResult<Product> saveResult = await _productService.SaveProductAsync(ProductData);
 
             if (!saveResult.Succeeded)
             {
-                StatusMessage = saveResult.ErrorMessage ?? "Produkten kunde inte sparas.";
-                StatusColor = "red";
+                SetStatus(saveResult.ErrorMessage ?? "Produkten kunde inte sparas.", "red");
                 return;
             }
 
             // Om allt gick bra
-            StatusMessage = "Produkten har sparats.";
-            StatusColor = "Green";
+            SetStatus("Produkten har sparats.", "green");
 
             // Användaren hinner se statusmeddelandet
             await Task.Delay(1000);
@@ -66,8 +49,7 @@ public partial class ProductAddViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Ett oväntat fel uppstod: {ex.Message}";
-            StatusColor = "red";
+            SetStatus($"Ett oväntat fel uppstod: {ex.Message}", "red");
         }
     }
 

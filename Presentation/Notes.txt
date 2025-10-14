@@ -14,23 +14,31 @@ Du måste använda dig av Git/GitHub och använda dig av olika branches när du 
 
 ---------------------------------------------------------------------------------
 
-Element (också kallat kontroll): window, grid, button, slider, textbox etc.
+WPF-element (också kallat kontroll): window, grid, button, slider, textbox etc.
 På Window-elementet finns olika attribut: title, xmlns, x:Class, source (src)
 
-public async Task<ProductServiceResult<Product>> SaveProductAsync(Product product) // MÅSTE FÅNGA UPP DATA = NULL I MAINWINDOW.XAML.CS
 
 
 ---------------------------------------------------------------
 Branchen: 
-Refactor
-fix: make Avbryt-button responsive and actually cancel refresh - clean up layout
 
+Refactor: change ProductEdit- and AddView button-text from Avbryt to Tillbaka.
+Refactor: change HideStatusSoonAsync to ClearStatusAfterAsync.
+Refactor: move status message logic (StatusMessage, StatusColor, ClearStatusAfterAsync) into StatusViewModelBase to avid repetition
+
+
+
+Redan commitat:
+
+Refactor: change ProductEdit- and AddView button-text from Avbryt to Tillbaka.
+Refactor: change HideStatusSoonAsync to ClearStatusAfterAsync.
+Refactor: move status message logic (StatusMessage, StatusColor, ClearStatusAfterAsync) into StatusViewModelBase to avid repetition
+
+fix: make Avbryt-button responsive and actually cancel refresh - clean up layout
 Add CancelRefresh-method in ProductListViewModel that directly calls RefreshCommand.Cancel() and bind Avbryt-button to it for reliable cancel. 
 Add await Task.Yield to let the UI render before starting the reload-work, so buttons are clickable immediately.
 In PopulateProductListAsync, yield after ProductList.Clear and check ct.ThrowIfCancellationRequested() while adding items to keep UI responsive and cancelable. 
 
-
-Redan commitat:
 - Add LoadCommand.Execute(null). Automaticcaly load the list on startup
 - Add catch (OperationCanceledException) to LoadAsync, to adress user 
 - Add RefreshAsync-method to ProductListViewModel to separate load and reload-command
@@ -38,56 +46,29 @@ Redan commitat:
 - Add Ladda om/Avbryt-button incomplete
 
 
-
-
-feat: add FormViewModelBase to minimera upprepad kod
-
 feat: – när du lägger till en ny funktionalitet
 fix: – när du rättar ett fel
 refactor: – när du omstrukturerar utan ny funktion
 docs: – när du ändrar dokumentation
 test: – när du lägger till eller ändrar tester
 
-
- <!-- Spara-knapp -->
-<Button Content="Spara" Command="{Binding SaveCommand}" />
-
-<!-- Avbryt pågående Save (cancellation), inte navigationen -->
-<Button Content="Avbryt sparande" Command="{Binding SaveCommand.CancelCommand}" />
-
-<!-- Navigerings-avbryt (tillbaka till listan) -->
-<Button Content="Tillbaka" Command="{Binding CancelCommand}" />
-
-AsyncRelayCommand skapar och äger CTS internt och sköter Cancel() och Dispose() åt dig.
-
 ----------------------------------------------------------------------
-
-
-CommunityToolkit AsyncRelayCommand med signaturen Task LoadAsync(CancellationToken ct), injicerar kommandot en token automatiskt när du anropar new AsyncRelayCommand(LoadAsync).
-
-Refactor CancellationToken:
-.NET-standard: den som startar operationen äger avbryt, alltså användaren av applikationen ex. en Avbryt-knapp i UI. 
-
-Eftersom EnsureLoadedAsync är den metod i ProductService som alltid först pratar med repot för att läsa från fil (via anrop till GetProductsAsync), så är den satt att hantera OperationCanceledException i och med att inparametern ct inte är satt som default / behöver den stöd för avbryt (luddigt, förtydliga kort och koncist).
-De andra metoderna tar ct som inparameter för att kunna vidarebefodra ett cancel-command (token) till EnsureLoaded som sedan avbryter den pågående operationen.
-
-
 
 ATT GÖRA:
 --------------
-Ändra Avbryt till Tillbaka i add- och editview
-PRodukten sparas trots att inte pris är angett. Pris textbox blir röd?? i listan är priset satt till 0
-Lägg till HideStatusSoon i add och edit
+Produkten sparas trots att inte pris är angett. Pris textbox blir röd?? i listan är priset satt till 0
+Lägg till _ = ClearStatusAfterAsync(); i add och edit går inte tots publik, måste jag duplicera kod???
 
+public async Task<ProductServiceResult<Product>> SaveProductAsync(Product product) // MÅSTE FÅNGA UPP DATA = NULL I MAINWINDOW.XAML.CS
 
-Skapa en FormViewModelBase - cancel och save-metoderna-duplicering.. ärver
+Skapa en FormViewModelBase - cancel och save-metoderna-duplicering.. ärver - feat: add FormViewModelBase to minimera upprepad kod
 Skapa en StatusViewModelBase alla tre metoder plocka bor statusmeddelanden efter ett tag..ärver
 
 Enhetstester xUnit 
 (integrationstest Repository??)
 
 
-
+r
 
 
 

@@ -8,7 +8,7 @@ using Presentation.Interfaces;
 
 namespace Presentation.ViewModels;
 
-public partial class ProductEditViewModel(IViewNavigationService viewNavigationService, IProductService productService) : ObservableObject
+public partial class ProductEditViewModel(IViewNavigationService viewNavigationService, IProductService productService) : StatusViewModelBase
 {
     private readonly IViewNavigationService _viewNavigationService = viewNavigationService;
     private readonly IProductService _productService = productService;
@@ -18,12 +18,6 @@ public partial class ProductEditViewModel(IViewNavigationService viewNavigationS
 
     [ObservableProperty]
     private string _title = "Uppdatera produkt";
-
-    [ObservableProperty]
-    private string? _statusMessage;
-
-    [ObservableProperty]
-    private string? _statusColor;
 
     // Kopierar över den valda produktens data till ViewModelns redigeringsinstans, så att användaren kan se och ändra informationen i UI:t innan ändringarna sparas.
     public void SetProduct(ProductUpdateRequest product)
@@ -45,10 +39,9 @@ public partial class ProductEditViewModel(IViewNavigationService viewNavigationS
         try// BORDE KOLLA OM PRODUCTdATA == NULL? också
         {
             // Defense in depth: även om ProductService validerar fälten, en snabb kontroll här för att ge direkt feedback till användaren,  utan onödigt anrop till fil. 
-            if (string.IsNullOrWhiteSpace(ProductData?.Name) || ProductData.Price < 0)
+            if (string.IsNullOrWhiteSpace(ProductData?.Name) || ProductData.Price <= 0)
             {
-                StatusMessage = "Fälten är inte korrekt ifyllda.";
-                StatusColor = "red";
+                SetStatus("Fälten är inte korrekt ifyllda.", "red");
                 return;
             }
 
@@ -56,14 +49,12 @@ public partial class ProductEditViewModel(IViewNavigationService viewNavigationS
 
             if (!saveResult.Succeeded)
             {
-                StatusMessage = saveResult.ErrorMessage ?? "Produkten kunde inte uppdateras.";
-                StatusColor = "red";
+                SetStatus(saveResult.ErrorMessage ?? "Produkten kunde inte uppdateras.", "red");
                 return;
             }
 
             // Om allt gick bra
-            StatusMessage = "Produkten har uppdaterats.";
-            StatusColor = "Green";
+            SetStatus("Produkten har uppdaterats.", "green");
 
             // Användaren hinner se statusmeddelandet
             await Task.Delay(1000);
@@ -72,8 +63,7 @@ public partial class ProductEditViewModel(IViewNavigationService viewNavigationS
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Ett oväntat fel uppstod: {ex.Message}";
-            StatusColor = "red";
+            SetStatus($"Ett oväntat fel uppstod: {ex.Message}", "red");
         }
     }
 

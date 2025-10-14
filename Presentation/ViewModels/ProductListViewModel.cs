@@ -9,12 +9,10 @@ using System.Collections.ObjectModel;
 
 namespace Presentation.ViewModels;
 
-public partial class ProductListViewModel : ObservableObject
+public partial class ProductListViewModel : StatusViewModelBase 
 {
     private readonly IViewNavigationService _viewNavigationService;
     private readonly IProductService _productService;
-    // Refererar alltid till den senaste instansen av CancellationTokenSource som skapats i HideStatusSoon. När statusCts.Cancel() anropas (då ett nytt statusmeddelande visas) avbryts just den instansen, via token i Task.Delay.. Är null tills första gången HideStatusSoon() körs.
-    private CancellationTokenSource? _statusCts;
 
     // XAML kan bara binda publika properties. Readonly - värdet sätts i konstruktorn och kommandon ändras aldrig = ej ObservableProperty. ASYNCRelayCommand (-> LoadASYNC), kan skicka med en CancellationToken.
     public IAsyncRelayCommand LoadCommand { get; } // Initial laddning
@@ -44,37 +42,6 @@ public partial class ProductListViewModel : ObservableObject
     [ObservableProperty]
     private bool _isLoading;
 
-    [ObservableProperty]
-    private string? _statusMessage;
-
-    [ObservableProperty]
-    private string? _statusColor;
-
-    // Ingen ct skickas in som parameter. Metoden sköter sin egen avbrytlogik
-    private async Task HideStatusSoon(int ms = 3000)
-    {
-        // Avbryt eventuell tidigare timer = aldrig två timers igång samtidigt. Dispose avlastar operativsystemet direkt från att hålla liv i onödiga resurser, tills garbage collector städar.  
-        _statusCts?.Cancel();
-        _statusCts?.Dispose();
-        // Skapa en ny cts-instans som gäller för just den här pågående väntan. Fältet refererar nu till denna nya instans 
-        _statusCts = new CancellationTokenSource();
-        // Hämtar en token från den nya instansen (via fältet). Tokenen är bara en kopia som används lokalt här, men är kopplad till _statusCts.
-        CancellationToken ctoken = _statusCts.Token; 
-
-        try
-        {
-            // Väntar i 3000 ms, men avbryts direkt om HideStatusSoon anropas igen, (för körs statusCts.Cancel() på föregående cts).
-            await Task.Delay(ms, ctoken);
-            // Om väntan inte avbryts, rensa status efter 3 sek.
-            StatusMessage = null;
-            StatusColor = null;
-        }
-        // Kastas om statusCts.Cancel() anropas på cts (alltså när en ny HideStatusSoon startas).
-        catch (TaskCanceledException)
-        {
-            // Ignorera – det betyder bara att ett nytt statusmeddelande avbröt den gamla väntan.
-        }
-    }
 
     // logiken: hämtar/uppdaterar data, hanterar affärslogiska/förväntade fel, test- och återanvändbar
     public async Task PopulateProductListAsync(CancellationToken ct = default)
@@ -84,11 +51,7 @@ public partial class ProductListViewModel : ObservableObject
         // loadresult är inte null, returnerar alltid ett nytt ServiceResult-objekt i GetProducts
         if (!loadResult.Succeeded)
         {
-            StatusMessage = loadResult!.ErrorMessage ?? "Kunde inte hämta produkterna. Försök igen senare.";
-            StatusColor = "red";
-
-            // Fire-and-forget – kör i bakgrunden tills den är klar utan att blockera. Den här metoden ska kunna avslutas direkt ändå.
-            _ = HideStatusSoon();
+            SetStatus(loadResult!.ErrorMessage ?? "Kunde inte hämta produkterna. Försök igen senare.", "red");
             return;
         }
 
@@ -116,16 +79,12 @@ public partial class ProductListViewModel : ObservableObject
         // OperationCanceledException fångas här för att ge feedback till användaren. OperationCanceledException i ProductService.EnsureLoaded stoppar själva arbetsprocessen.
         catch (OperationCanceledException) 
         {
-            StatusMessage = "Laddning avbröts.";
-            StatusColor = "red";
-            _ = HideStatusSoon();
+            SetStatus("Laddning avbröts.", "red");
         }
         // Fångar tekniska/oförutsedda fel
         catch (Exception ex) 
         {
-            StatusMessage = $"Ett oväntat fel uppstod: {ex.Message}";
-            StatusColor = "red";
-            _ = HideStatusSoon();
+            SetStatus($"Ett oväntat fel uppstod: {ex.Message}", "red");
         }
     }
 
@@ -134,8 +93,7 @@ public partial class ProductListViewModel : ObservableObject
         try
         {
             IsLoading = true;
-            StatusMessage = "Laddar om...";
-            StatusColor = "black";
+            SetStatus("Laddar om...", "black");
 
             // Simulerar fördröjning i laddningen av listan 
             await Task.Delay(3000, ct);
@@ -145,15 +103,11 @@ public partial class ProductListViewModel : ObservableObject
             int count = ProductList.Count;
             string plural = count == 1 ? "produkt" : "produkter";
 
-            StatusMessage = $"Listan är uppdaterad. {count} {plural}."; // Försvinner inte varför
-            StatusColor = "green";
-            _ = HideStatusSoon();
+            SetStatus($"Listan är uppdaterad. {count} {plural}.", "green");
         }
         catch (OperationCanceledException) // Fångar CancelRefresh
         {
-            StatusMessage = "Omladdning avbröts.";
-            StatusColor = "red";
-            _ = HideStatusSoon();
+            SetStatus("Omladdning avbröts.", "red");
         }
         // Garanterar att UI inte "fastnar" i laddning-läge
         finally
@@ -202,25 +156,19 @@ public partial class ProductListViewModel : ObservableObject
             ServiceResult deleteResult = await _productService.DeleteProductAsync(productId); 
             if (!deleteResult.Succeeded)
             {
-                StatusMessage = deleteResult.ErrorMessage ?? "Kunde inte ta bort produkten";
-                StatusColor = "red";
-                _ = HideStatusSoon();
-                return; // Metoden avbryts om något gick fel, istället för att fortsätta på nästa rad
+                SetStatus(deleteResult.ErrorMessage ?? "Kunde inte ta bort produkten", "red");
+                // Metoden avbryts om något gick fel, istället för att fortsätta på nästa rad
+                return; 
             }
 
             await PopulateProductListAsync();
 
-            StatusMessage = "Produkten har tagits bort";
-            StatusColor = "green";
-            _ = HideStatusSoon();
+            SetStatus("Produkten har tagits bort", "green");
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Ett oväntat fel uppstod: {ex.Message}";
-            StatusColor = "red";  
-            _ = HideStatusSoon();
+            SetStatus($"Ett oväntat fel uppstod: {ex.Message}", "red");  
         }
-      
     }
 }
 
