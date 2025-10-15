@@ -6,6 +6,7 @@ using Domain.Entities;
 using Domain.Helpers;
 using Domain.Results;
 using System.Linq;
+using System.Xml.Linq;
 namespace ApplicationLayer.Services;
 
 public partial class ProductService
@@ -15,8 +16,26 @@ public partial class ProductService
         if (request is null)
             return new ServiceResult { Succeeded = false, StatusCode = 400, ErrorMessage = "Ingen data skickades in." };
 
-        if (string.IsNullOrWhiteSpace(request.Name) || request.Price <= 0)
-            return new ServiceResult { Succeeded = false, StatusCode = 400, ErrorMessage = "Fälten namn och pris är inte korrekt ifyllda." };
+        // Validera på trimmat namn
+        string name = request.Name?.Trim() ?? string.Empty;
+
+        List<string> errors = [];
+
+        if (string.IsNullOrWhiteSpace(request.Name))
+            errors.Add("Namn måste anges.");
+
+        if (request.Price is null)
+            errors.Add("Pris måste anges.");
+        else if (request.Price <= 0)
+            errors.Add("Pris måste vara större än 0.");
+
+        if (errors.Count > 0)
+            return new ServiceResult
+            {
+                Succeeded = false,
+                StatusCode = 400,
+                ErrorMessage = string.Join("\n", errors)
+            };
 
         return new ServiceResult { Succeeded = true, StatusCode = 200 };
     }

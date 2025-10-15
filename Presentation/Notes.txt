@@ -21,12 +21,15 @@ På Window-elementet finns olika attribut: title, xmlns, x:Class, source (src)
 
 ---------------------------------------------------------------
 Branchen: 
+Refactor - ensure that products cannot be saved with empty or zero price:
+Change IProductRequest.Price from decimal to nullable decimal (decimal?), so wpf can bind empty textbox to null instead of keeping an old value. Catch null-value in Save-method and ProductService.ValidateRequest. 
+Update validation in ProductEditViewModel Save-methods and ProductService.ValidateRequest to reject null or <= 0. 
+Fix Price TextBox binding in ProductEdit- and AddView:
+- Changed to TwoWay binding so edits update ProductData.Price
+- Added UpdateSourceTrigger=PropertyChanged for immediate updates
+- Added TargetNullValue='' so null values show as empty string
 
-Refactor: change ProductEdit- and AddView button-text from Avbryt to Tillbaka.
-Refactor: change HideStatusSoonAsync to ClearStatusAfterAsync.
-Refactor: move status message logic (StatusMessage, StatusColor, ClearStatusAfterAsync) into StatusViewModelBase to avid repetition
-
-
+Fix(product): trim name before duplicate check
 
 Redan commitat:
 
@@ -56,19 +59,11 @@ test: – när du lägger till eller ändrar tester
 
 ATT GÖRA:
 --------------
-Produkten sparas trots att inte pris är angett. Pris textbox blir röd?? i listan är priset satt till 0
-Lägg till _ = ClearStatusAfterAsync(); i add och edit går inte tots publik, måste jag duplicera kod???
-
-public async Task<ProductServiceResult<Product>> SaveProductAsync(Product product) // MÅSTE FÅNGA UPP DATA = NULL I MAINWINDOW.XAML.CS
-
-Skapa en FormViewModelBase - cancel och save-metoderna-duplicering.. ärver - feat: add FormViewModelBase to minimera upprepad kod
-Skapa en StatusViewModelBase alla tre metoder plocka bor statusmeddelanden efter ett tag..ärver
-
 Enhetstester xUnit 
 (integrationstest Repository??)
 
 
-r
+
 
 
 
@@ -93,6 +88,13 @@ kopiera interface + metoder i productservice. samma med fileservice och Ifileser
 extensionmethods + helpers men inte readasync i filerepository
 // helpers, extensionmethods testas, id visas i listvyn eller editvyn
 
+4.	Enhetstester
+•	Lägg till tester för:
+•	null pris
+•	0 pris
+•	negativt pris
+•	giltigt pris i både create och update.
+
 
 Repository: tekniskt skydd (filåtkomst, skrivfel)
 
@@ -102,8 +104,5 @@ ViewModel: användarskydd (UI’t kraschar inte)
 
 
 ---------------------------------------------------
-CancellationTokenändring i presentation:
-Vad är LoadCommand.Execute(null)? 
-Det startar ditt AsyncRelayCommand direkt vid uppstart. Fördelen: kommandot skapar en intern CancellationTokenSource, sätter IsRunning och exponerar CancelCommand så att du kan avbryta just den körningen. Om du i stället kör _ = LoadAsync() i konstruktorn går laddningen utanför kommandot och kan inte avbrytas via CancelCommand.
 
-(autoladda, men via kommandot så att Cancel fungerar på första laddningen.).
+

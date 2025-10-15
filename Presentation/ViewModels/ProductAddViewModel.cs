@@ -13,6 +13,7 @@ public partial class ProductAddViewModel(IViewNavigationService viewNavigationSe
 {
     private readonly IViewNavigationService _viewNavigationService = viewNavigationService;
     private readonly IProductService _productService = productService;
+
     [ObservableProperty]
     private ProductCreateRequest _productData = new();
 
@@ -25,9 +26,19 @@ public partial class ProductAddViewModel(IViewNavigationService viewNavigationSe
         try
         {
             // Defense in depth: även om ProductService validerar fälten, en snabb kontroll här för att ge direkt feedback till användaren,  utan onödigt anrop till fil. 
-            if (string.IsNullOrWhiteSpace(ProductData.Name) || ProductData.Price <= 0)
+            List<string> errors = [];
+
+            if (string.IsNullOrWhiteSpace(ProductData.Name))
+                errors.Add("Namn måste anges.");
+
+            if (ProductData.Price is null)
+                errors.Add("Pris måste anges.");
+            else if (ProductData.Price <= 0)
+                errors.Add("Pris måste vara större än 0.");
+
+            if (errors.Count > 0)
             {
-                SetStatus("Fälten är inte korrekt ifyllda.", "red");
+                SetStatus(string.Join("\n", errors), "red");
                 return;
             }
 

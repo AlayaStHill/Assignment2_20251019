@@ -13,6 +13,7 @@ public partial class ProductEditViewModel(IViewNavigationService viewNavigationS
     private readonly IViewNavigationService _viewNavigationService = viewNavigationService;
     private readonly IProductService _productService = productService;
 
+    // Varför nullable: ProductEditViewModel skapas först, och sedan kallas SetProduct() via navigationen efter tryck på Redigera-knapp. Under det fönstret kan ProductData vara null. Null-check i Save().
     [ObservableProperty]
     private ProductUpdateRequest? _productData;
 
@@ -36,14 +37,35 @@ public partial class ProductEditViewModel(IViewNavigationService viewNavigationS
     [RelayCommand]
     private async Task Save()
     {
-        try// BORDE KOLLA OM PRODUCTdATA == NULL? också
+        try
         {
-            // Defense in depth: även om ProductService validerar fälten, en snabb kontroll här för att ge direkt feedback till användaren,  utan onödigt anrop till fil. 
-            if (string.IsNullOrWhiteSpace(ProductData?.Name) || ProductData.Price <= 0)
+            if (ProductData is null) 
             {
-                SetStatus("Fälten är inte korrekt ifyllda.", "red");
+                SetStatus("Inga produktuppgifter angivna.", "red");
                 return;
             }
+
+            // Tillägg för korrekt dublettlogik. string.Empty fångas nedan
+            string name = ProductData.Name?.Trim() ?? string.Empty;
+
+            List<string> errors = [];
+
+            if (string.IsNullOrWhiteSpace(ProductData.Name))
+                errors.Add("Namn måste anges.");
+
+            if (ProductData.Price is null)
+                errors.Add("Pris måste anges.");
+            else if (ProductData.Price <= 0)
+                errors.Add("Pris måste vara större än 0.");
+
+            if (errors.Count > 0)
+            {
+                SetStatus(string.Join("\n", errors), "red");
+                return;
+            }
+
+            // Den trimmade varianten sparas
+            ProductData.Name = name;
 
             ServiceResult saveResult = await _productService.UpdateProductAsync(ProductData);
 
