@@ -1,81 +1,67 @@
-För att uppnå kravet för väl godkänt krävs även följande:
-Du ska göra ytterligare en applikation, som ska vara en grafisk applikation (WPF/MAUI).
-* Det ska gå att navigera sig mellan två vyer. Ena vyn ska vara själva listan och den andra vyn ska vara en vy där du kan skapa och visa en produkt (du får ha dessa på två separata vyer om du så vill).
-Produkten ska även innehålla värden som kategori och tillverkare. Dessa ska då vara separata klasser.
-Du måste implementera interfaces.
-Du måste använda dig av Service Pattern och separera ansvarsområden.
-Utöver funktionalitet såsom att lägga till och visa alla produkter ska det nu även gå att uppdatera produktinformationen samt ta bort en produkt från listan. 
-Du ska även se till att en produkt inte kan läggas till två gånger eller att en tom produkt kan läggas till.
+ï»¿FÃ¶r att uppnÃ¥ kravet fÃ¶r vÃ¤l godkÃ¤nt krÃ¤vs Ã¤ven fÃ¶ljande:
+Du ska gÃ¶ra ytterligare en applikation, som ska vara en grafisk applikation (WPF/MAUI).
+* Det ska gÃ¥ att navigera sig mellan tvÃ¥ vyer. Ena vyn ska vara sjÃ¤lva listan och den andra vyn ska vara en vy dÃ¤r du kan skapa och visa en produkt (du fÃ¥r ha dessa pÃ¥ tvÃ¥ separata vyer om du sÃ¥ vill).
+Produkten ska Ã¤ven innehÃ¥lla vÃ¤rden som kategori och tillverkare. Dessa ska dÃ¥ vara separata klasser.
+Du mÃ¥ste implementera interfaces.
+Du mÃ¥ste anvÃ¤nda dig av Service Pattern och separera ansvarsomrÃ¥den.
+UtÃ¶ver funktionalitet sÃ¥som att lÃ¤gga till och visa alla produkter ska det nu Ã¤ven gÃ¥ att uppdatera produktinformationen samt ta bort en produkt frÃ¥n listan. 
+Du ska Ã¤ven se till att en produkt inte kan lÃ¤ggas till tvÃ¥ gÃ¥nger eller att en tom produkt kan lÃ¤ggas till.
 * Du ska skapa enhetstester som testar alla dina funktioner som du har skapat.
-Lägg till en kontroll i funktionen som lägger till en produkt för att säkerställa att produkter med samma namn inte kan läggas till två gånger.
-Produktinformationen ska sparas ner till en .json-fil och ska även kunna hämtas upp när programmet startar och när ny lista ska hämtas.
-* Du måste göra enhetstester/integrationstester för samtlig funktionalitet såsom att lägga till, visa, uppdatera, ta bort, läsa in lista, spara lista.
-Du måste använda dig av Git/GitHub och använda dig av olika branches när du skapar din funktionalitet. Dina branches i GitHub får inte tas bort utan ska finnas kvar. Men den slutgiltiga inlämningen ska vara main/master-branchen.
+LÃ¤gg till en kontroll i funktionen som lÃ¤gger till en produkt fÃ¶r att sÃ¤kerstÃ¤lla att produkter med samma namn inte kan lÃ¤ggas till tvÃ¥ gÃ¥nger.
+Produktinformationen ska sparas ner till en .json-fil och ska Ã¤ven kunna hÃ¤mtas upp nÃ¤r programmet startar och nÃ¤r ny lista ska hÃ¤mtas.
+* Du mÃ¥ste gÃ¶ra enhetstester/integrationstester fÃ¶r samtlig funktionalitet sÃ¥som att lÃ¤gga till, visa, uppdatera, ta bort, lÃ¤sa in lista, spara lista.
+Du mÃ¥ste anvÃ¤nda dig av Git/GitHub och anvÃ¤nda dig av olika branches nÃ¤r du skapar din funktionalitet. Dina branches i GitHub fÃ¥r inte tas bort utan ska finnas kvar. Men den slutgiltiga inlÃ¤mningen ska vara main/master-branchen.
 
 ---------------------------------------------------------------------------------
-* View (XAML + code-behind): ska bara hantera utseende och användarinteraktion (knappar, menyer, UI-element).
-	Databindning
-* ViewModel: ska innehålla logiken (vad som händer när man klickar, laddar data, byter vy).
 
-Element (också kallat kontroll): window, grid, button, slider, textbox etc.
-På Window-elementet finns olika attribut: title, xmlns, x:Class, source (src)
+WPF-element (ocksÃ¥ kallat kontroll): window, grid, button, slider, textbox etc.
+PÃ¥ Window-elementet finns olika attribut: title, xmlns, x:Class, source (src)
 
-public async Task<ProductServiceResult<Product>> SaveProductAsync(Product product) // MÅSTE FÅNGA UPP DATA = NULL I MAINWINDOW.XAML.CS
 
 
 ---------------------------------------------------------------
 Branchen: 
-fix(RepositoryResult): assign Data in Created() to prevent null results
-fix(repository): write created entities to file in GetOrCreateAsync
+Refactor - ensure that products cannot be saved with empty or zero price:
+Change IProductRequest.Price from decimal to nullable decimal (decimal?), so wpf can bind empty textbox to null instead of keeping an old value. Catch null-value in Save-method and ProductService.ValidateRequest. 
+Update validation in ProductEditViewModel Save-methods and ProductService.ValidateRequest to reject null or <= 0. 
+Fix Price TextBox binding in ProductEdit- and AddView:
+- Changed to TwoWay binding so edits update ProductData.Price
+- Added UpdateSourceTrigger=PropertyChanged for immediate updates
+- Added TargetNullValue='' so null values show as empty string
 
-feat: add FormViewModelBase to minimera upprepad kod
+Fix(product): trim name before duplicate check
 
-feat: – när du lägger till en ny funktionalitet
-fix: – när du rättar ett fel
-refactor: – när du omstrukturerar utan ny funktion
-docs: – när du ändrar dokumentation
-test: – när du lägger till eller ändrar tester
+Redan commitat:
+
+Refactor: change ProductEdit- and AddView button-text from Avbryt to Tillbaka.
+Refactor: change HideStatusSoonAsync to ClearStatusAfterAsync.
+Refactor: move status message logic (StatusMessage, StatusColor, ClearStatusAfterAsync) into StatusViewModelBase to avid repetition
+
+fix: make Avbryt-button responsive and actually cancel refresh - clean up layout
+Add CancelRefresh-method in ProductListViewModel that directly calls RefreshCommand.Cancel() and bind Avbryt-button to it for reliable cancel. 
+Add await Task.Yield to let the UI render before starting the reload-work, so buttons are clickable immediately.
+In PopulateProductListAsync, yield after ProductList.Clear and check ct.ThrowIfCancellationRequested() while adding items to keep UI responsive and cancelable. 
+
+- Add LoadCommand.Execute(null). Automaticcaly load the list on startup
+- Add catch (OperationCanceledException) to LoadAsync, to adress user 
+- Add RefreshAsync-method to ProductListViewModel to separate load and reload-command
+- Add HideStatusSoon to handle statusmeddelanden
+- Add Ladda om/Avbryt-button incomplete
 
 
+feat: â€“ nÃ¤r du lÃ¤gger till en ny funktionalitet
+fix: â€“ nÃ¤r du rÃ¤ttar ett fel
+refactor: â€“ nÃ¤r du omstrukturerar utan ny funktion
+docs: â€“ nÃ¤r du Ã¤ndrar dokumentation
+test: â€“ nÃ¤r du lÃ¤gger till eller Ã¤ndrar tester
 
 ----------------------------------------------------------------------
-refactor: repository restructuring and ProductService update
 
-- Remove GetOrCreateAsync from RepositoryExtensions
-- Remove ProductJsonRepository, CategoryJsonRepository, ManufacturerJsonRepository and corresponding interfaces
-- Add GetEntityAsync-method to JsonRepository
-- Add ExistsAsync-method to RepositoryExtensions
-- Add manufacturer.json and categories.json to Data folder
-- Rename ProductRequest to ProductCreateRequest
-- Update IRepository with GetEntityAsync and ExistsAsync
-- Update ProductService.UpdateProductAsync
-
-
-
-
-ATT GÖRA:
+ATT GÃ–RA:
 --------------
-använd konsekvent if (!result) i metoderna
-bryt ut och skapa hjälpmetoder för att korta ned metoder
-
-Skapa en FormViewModelBase - cancel och save-metoderna-duplicering.. ärver
-Skapa en StatusViewModelBase alla tre metoder plocka bor statusmeddelanden efter ett tag..ärver
-
-
-
 Enhetstester xUnit 
 (integrationstest Repository??)
 
-
-??? Senare kan du alltid lägga till cache/minneslager, men just nu kommer det inte göra någon skillnad i din app – bara göra det svårare att förstå vad som händer.
-********inte case-sensitive produkt, tillverkare, kategori så att inte två produkter kan läggast till med samma namn fast små eller stor bokstäver
-
-
-
-
-
-Lektion 09/29 mer info productlistview?
-MATERIAL TILL PROJEKTET: MVVM + LEKTION_20250929
 
 
 
@@ -83,16 +69,16 @@ MATERIAL TILL PROJEKTET: MVVM + LEKTION_20250929
 
 DDD (Domain-Driven Design)
 --------------------------
-Domänen:      Produkthantering (området programmet handlar om)
-Entities:     Product, Category, Manufacturer. Även kallat domänens kärnmodeller. Har alltid en unik Id-property, vilket är det som gör dem till entities.
-DTOs:         ProductUpdateRequest, ProductRequest (Data Transfer Object - används bara för att flytta data mellan lager, ex. UI -> ProductService)
+DomÃ¤nen:      Produkthantering (omrÃ¥det programmet handlar om)
+Entities:     Product, Category, Manufacturer. Ã„ven kallat domÃ¤nens kÃ¤rnmodeller. Har alltid en unik Id-property, vilket Ã¤r det som gÃ¶r dem till entities.
+DTOs:         ProductUpdateRequest, ProductRequest (Data Transfer Object - anvÃ¤nds bara fÃ¶r att flytta data mellan lager, ex. UI -> ProductService)
 Repositories: ProductRepository, CategoryRepository, ManufacturerRepository
 Service:      ProductService (samordnar logiken)
 
-Domain =		 Entities och Interfaces (vad systemet är). Kataloger: Project Reference: None
-Application =	 Use cases och affärslogik (vad systemet gör). Project Reference: Domain
+Domain =		 Entities och Interfaces (vad systemet Ã¤r). Kataloger: Project Reference: None
+Application =	 Use cases och affÃ¤rslogik (vad systemet gÃ¶r). Project Reference: Domain
 Infrastructure = Repositories och teknik (hur systemet lagrar data). Project Reference: Domain
-Presentation =	 UI/MVVM (hur användaren interagerar). Project Reference: Domain (Composition Root - DI-container)
+Presentation =	 UI/MVVM (hur anvÃ¤ndaren interagerar). Project Reference: Domain (Composition Root - DI-container)
 
 
 
@@ -102,9 +88,21 @@ kopiera interface + metoder i productservice. samma med fileservice och Ifileser
 extensionmethods + helpers men inte readasync i filerepository
 // helpers, extensionmethods testas, id visas i listvyn eller editvyn
 
+4.	Enhetstester
+â€¢	LÃ¤gg till tester fÃ¶r:
+â€¢	null pris
+â€¢	0 pris
+â€¢	negativt pris
+â€¢	giltigt pris i bÃ¥de create och update.
 
-Repository: tekniskt skydd (filåtkomst, skrivfel)
 
-Service: affärslogiskt skydd (t.ex. “produkt finns redan”)
+Repository: tekniskt skydd (filÃ¥tkomst, skrivfel)
 
-ViewModel: användarskydd (UI’t kraschar inte)
+Service: affÃ¤rslogiskt skydd (t.ex. â€œprodukt finns redanâ€)
+
+ViewModel: anvÃ¤ndarskydd (UIâ€™t kraschar inte)
+
+
+---------------------------------------------------
+
+

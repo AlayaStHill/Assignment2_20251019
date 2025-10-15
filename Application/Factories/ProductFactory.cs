@@ -11,7 +11,7 @@ public class ProductFactory
         {
             Id = Guid.NewGuid().ToString(),
             Name = productCreateRequest.Name,
-            Price = productCreateRequest.Price,
+            Price = productCreateRequest.Price!.Value,
             Category = null,
             Manufacturer = null
         };

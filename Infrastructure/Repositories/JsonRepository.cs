@@ -21,6 +21,8 @@ public class JsonRepository<T> : IRepository<T> where T : class
         EnsureInitialized(_dataDirectory, _filePath);
     }
 
+
+
     public static void EnsureInitialized(string dataDirectory, string filePath)
     {
         if (!Directory.Exists(dataDirectory))
@@ -35,53 +37,49 @@ public class JsonRepository<T> : IRepository<T> where T : class
         string existing = File.ReadAllText(filePath);
         if (string.IsNullOrWhiteSpace(existing))
             File.WriteAllText(filePath, "[]");
-
-
-        // Nytt: validera att filen verkligen är en JSON-lista för T
-        try
-        {
-            JsonSerializer.Deserialize<List<T>>(existing, _jsonOptions);
-        }
-        catch (JsonException)
-        {
-            // Om ogiltig -> skriv tom lista så kommande ReadAsync inte kastar
-            File.WriteAllText(filePath, "[]");
-        }
     }
 
-    // CancellationToken cancellationToken här är kopplad till CancellationTokenSourse i ProductService, varifrån dessa metoder kan avbrytas
-    public async Task<RepositoryResult<IEnumerable<T>>> ReadAsync(CancellationToken cancellationToken)
+
+    public async Task<RepositoryResult<IEnumerable<T>>> ReadAsync(CancellationToken ct)
     {
         try
         {
-            EnsureInitialized(_dataDirectory, _filePath);  
+            EnsureInitialized(_dataDirectory, _filePath);
 
-            string json = await File.ReadAllTextAsync(_filePath, cancellationToken);
-
-            System.Diagnostics.Debug.WriteLine($"[{typeof(T).Name}] Läser fil: {_filePath}");
-            System.Diagnostics.Debug.WriteLine($"Innehåll i filen: {json}");
+            string json = await File.ReadAllTextAsync(_filePath, ct);
 
             List<T>? entities = JsonSerializer.Deserialize<List<T>>(json, _jsonOptions);
             return RepositoryResult<IEnumerable<T>>.OK(entities ?? []);
-
         }
+
+        // Catch-block: fångar förväntade IO- och JSON-fel och mappar dem till RepositoryResult. ProductService hanterar endast avbryt och oväntade fel i sin egen logik.
+        catch (OperationCanceledException) { throw; } // bubbla vidare så avbryt via cancellationtoken fungerar
         catch (JsonException ex)
         {
-            // Om JSON är ogiltig, återställ filen till en giltig tom lista
-            await File.WriteAllTextAsync(_filePath, "[]", cancellationToken);
-
-            return RepositoryResult<IEnumerable<T>>.InternalServerError($"Ogiltig JSON i {_filePath}: {ex.Message}"); 
-
+            await File.WriteAllTextAsync(_filePath, "[]", ct);
+            return RepositoryResult<IEnumerable<T>>.InternalServerError($"Ogiltig JSON: {ex.Message}");
+        }
+        catch (IOException ex)
+        {
+            return RepositoryResult<IEnumerable<T>>.InternalServerError($"Filfel: {ex.Message}");
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return RepositoryResult<IEnumerable<T>>.InternalServerError($"Behörighetsfel: {ex.Message}");
+        }
+        catch (Exception ex) // Sista fallback för oväntade fel som inte fångats
+        {
+            return RepositoryResult<IEnumerable<T>>.InternalServerError($"Oväntat fel vid läsning: {ex.Message}");
         }
     }
 
-    public async Task<RepositoryResult> WriteAsync(IEnumerable<T> entities, CancellationToken cancellationToken)
+    public async Task<RepositoryResult> WriteAsync(IEnumerable<T> entities, CancellationToken ct)
     {
         try
         {
             string json = JsonSerializer.Serialize(entities, _jsonOptions);
             // fungerar med små filer. Stream tar bara 100 första delar upp stora filen i olika portioner effektivare- för systemet lättare med flera småbitar, kan deka ut i processorn i flera olika trådar istället för en enda stor tråd.
-            await File.WriteAllTextAsync(_filePath, json, cancellationToken); 
+            await File.WriteAllTextAsync(_filePath, json, ct); 
 
             return RepositoryResult.NoContent();
 
