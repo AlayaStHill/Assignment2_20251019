@@ -1,14 +1,13 @@
 ﻿using Domain.Results;
 using Infrastructure.Repositories;
 using System.Text.Json;
-
-namespace Assignment2.Tests.Infrastructure.Repositories;
 // Jag har använt AI och promptteknik som stöd i arbetet med att skriva testerna.
+namespace Assignment2.Tests.Infrastructure.Repositories;
 
-// IDisposable innehåller metoden Dispose. Implementation gör att xUnit automatiskt anropar Dispose() efter varje [Fact] = slipper upprepa städkod i varje test
+// IDisposable innehåller metoden Dispose. Implementation gör att xUnit automatiskt anropar Dispose() efter varje [Fact] = slipper upprepa städkod i varje test.
 public class JsonRepository_Tests : IDisposable 
 {
-    // I varje [Fact]-metod skapar xUnit ett nytt objekt av testklassen, dvs new JsonRepository_Tests(). Konstruktorn körs alltså för varje testmetod och testfälten är unika för just det testet. 
+    // I varje [Fact]-metod skapar xUnit-ramverket en ny instans av testklassen, dvs new JsonRepository_Tests(). Konstruktorn körs alltså för varje testmetod och testfälten är unika för just det testet. Efter varje test släpper xUnit alla referenser till instansen -> garbage collector.
     private readonly string _testDirectory;
     private readonly string _testFilePath;
 
@@ -21,6 +20,7 @@ public class JsonRepository_Tests : IDisposable
     }
 
     // JsonRepository<T> kräver en klass att serialisera. Minimal dummy-entitet som får motsvara Product för att kunna skriva/läsa json i testet. Själva testdatan skapas i varje test.
+    // Private: används bara internt i testprojektets kontext
     private class TestEntity
     {
         // tom sträng för att slippa hantera null-checkar, -exceptions
@@ -28,7 +28,7 @@ public class JsonRepository_Tests : IDisposable
         public string Name { get; set; } = ""; 
     }
 
-    // Städfunktion som anropas efter varje test-metod = inga kvarlämnade filer inför nästa test. Parametern recursive: true = ta bort katalogen och allt inuti
+    // Städfunktion som anropas efter varje test-metod = inga kvarlämnade filer inför nästa test. Parametern recursive: true = ta bort katalogen och allt inuti.
     public void Dispose()
     {
         try 
@@ -107,7 +107,7 @@ public class JsonRepository_Tests : IDisposable
         // ACT: skriv entiteterna till fil
         RepositoryResult result = await repo.WriteAsync(entities, CancellationToken.None);
 
-        // ASSERT (returvärde + roundtrip)
+        // ASSERT: metoden lyckas och filen har skapats
         Assert.True(result.Succeeded);
         Assert.True(File.Exists(_testFilePath));
 
@@ -136,6 +136,8 @@ public class JsonRepository_Tests : IDisposable
         Directory.CreateDirectory(_testDirectory);
         File.WriteAllText(_testFilePath, "[]");
 
+        JsonRepository<TestEntity> repo = new JsonRepository<TestEntity>(_testDirectory, "test.json");
+
         // Filen öppnas och låses (using = Dispose körs automatiskt när scopet tar slut)
         using FileStream lockStream = new(
             _testFilePath,
@@ -144,8 +146,7 @@ public class JsonRepository_Tests : IDisposable
             // Anger vilka andra processer som får använda filen samtidigt
             FileShare.None);
 
-        JsonRepository<TestEntity> repo = new JsonRepository<TestEntity>(_testDirectory, "test.json");
-        List<TestEntity> entities = new() { new() { Id = "1", Name = "Päron" } };
+        List<TestEntity> entities = new() { new() { Id = "1", Name = "Banan" } };
 
         // ACT: försök skriva medan filen är låst
         RepositoryResult result = await repo.WriteAsync(entities, CancellationToken.None);
