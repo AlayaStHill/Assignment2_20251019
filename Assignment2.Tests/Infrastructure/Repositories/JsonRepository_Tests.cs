@@ -1,4 +1,6 @@
-﻿using Infrastructure.Repositories;
+﻿using Domain.Results;
+using Infrastructure.Repositories;
+using System.Text.Json;
 
 namespace Assignment2.Tests.Infrastructure.Repositories;
 // Jag har använt AI och promptteknik som stöd i arbetet med att skriva testerna.
@@ -41,7 +43,7 @@ public class JsonRepository_Tests : IDisposable
         }
     }
 
-
+    // Happy path
     [Fact]
     public void EnsureInitialized_ShouldCreateDirectoryAndFile_WhenTheyDoNotExist()
     {
@@ -58,7 +60,7 @@ public class JsonRepository_Tests : IDisposable
         Assert.Equal("[]", File.ReadAllText(_testFilePath)); // Filens innehåll är []
     }
 
-
+    // Happy path
     [Fact]
     public void EnsureInitialized_ShouldOverwriteWithEmptyArray_WhenFileContainsOnlyWhitespace()
     {
@@ -73,7 +75,7 @@ public class JsonRepository_Tests : IDisposable
         Assert.Equal("[]", File.ReadAllText(_testFilePath));
     }
 
-
+    // Happy path
     [Fact]
     public void EnsureInitialized_ShouldOverwriteWithEmptyArray_WhenFileIsEmpty()
     {
@@ -90,9 +92,69 @@ public class JsonRepository_Tests : IDisposable
     }
 
 
+    // Happy-path
+    [Fact]
+    public async Task WriteAsync_ShouldWriteJsonAndReturnSucceeded_WhenEntitiesProvided()
+    {
+        // ARRANGE: skapa repository för TestEntity med katalog och fil och data som ska sparas
+        JsonRepository<TestEntity> repo = new JsonRepository<TestEntity>(_testDirectory, "test.json");
+        List<TestEntity> entities = new()
+        {
+            new() { Id = "1", Name = "Banan" },
+            new() { Id = "2", Name = "Äpple" }
+        };
 
-  
+        // ACT: skriv entiteterna till fil
+        RepositoryResult result = await repo.WriteAsync(entities, CancellationToken.None);
 
+        // ASSERT (returvärde + roundtrip)
+        Assert.True(result.Succeeded);
+        Assert.True(File.Exists(_testFilePath));
+
+        // Läs in innehållet i filen som en sträng
+        string json = File.ReadAllText(_testFilePath);
+        // deserialisera för att kunna asserta innehållet (? roundtrip blir null om deserialiseringen misslyckas)
+        List<TestEntity>? roundtrip = JsonSerializer.Deserialize<List<TestEntity>>(json);
+        // säkerställer att roundtrip inte är null inför nästa steg
+        Assert.NotNull(roundtrip);
+        // Kontrollera att listan har rätt antal och varje objekt har rätt värden
+        Assert.Equal(2, roundtrip!.Count);
+        Assert.Equal("1", roundtrip[0].Id);
+        Assert.Equal("Banan", roundtrip[0].Name);
+        Assert.Equal("2", roundtrip[1].Id);
+        Assert.Equal("Äpple", roundtrip[1].Name);
+
+        // roundtrip-test: (att skriva data till fil och sedan läsa tillbaka) för att verifiera att sparad data i filen motsvarar originaldatan
+    }
+
+
+    // Negative case test. Verifiera att WriteAsync mappar fil-I/O (läsa/skriva json)-problem till InternalServerError 
+    [Fact]
+    public async Task WriteAsync_ShouldReturnInternalServerError_WhenFileIsLocked()
+    {
+        // ARRANGE: skapa filen och lås den exklusivt med FileStream
+        Directory.CreateDirectory(_testDirectory);
+        File.WriteAllText(_testFilePath, "[]");
+
+        // Filen öppnas och låses (using = Dispose körs automatiskt när scopet tar slut)
+        using FileStream lockStream = new(
+            _testFilePath,
+            FileMode.Open,
+            FileAccess.Read,
+            // Anger vilka andra processer som får använda filen samtidigt
+            FileShare.None);
+
+        JsonRepository<TestEntity> repo = new JsonRepository<TestEntity>(_testDirectory, "test.json");
+        List<TestEntity> entities = new() { new() { Id = "1", Name = "Päron" } };
+
+        // ACT: försök skriva medan filen är låst
+        RepositoryResult result = await repo.WriteAsync(entities, CancellationToken.None);
+
+        // ASSERT: metoden ska ge statuskod 500 och ett felmeddelande
+        Assert.False(result.Succeeded);
+        Assert.Equal(500, result.StatusCode);
+        Assert.Contains("Kunde inte spara till fil:", result.ErrorMessage);
+    }
 }
 
 /*  
