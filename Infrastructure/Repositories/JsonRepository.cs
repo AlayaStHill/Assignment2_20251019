@@ -51,7 +51,6 @@ public class JsonRepository<T> : IRepository<T> where T : class
             List<T>? entities = JsonSerializer.Deserialize<List<T>>(json, _jsonOptions);
             return RepositoryResult<IEnumerable<T>>.OK(entities ?? []);
         }
-
         // Catch-block: fångar förväntade IO- och JSON-fel och mappar dem till RepositoryResult. ProductService hanterar endast avbryt och oväntade fel i sin egen logik.
         catch (OperationCanceledException) { throw; } // bubbla vidare så avbryt via cancellationtoken fungerar
         catch (JsonException ex)

@@ -1,7 +1,6 @@
 ﻿using Domain.Interfaces;
 using Domain.Results;
 using Domain.Helpers;
-
 using Moq;
 // Jag har använt AI och promptteknik som stöd i arbetet med att skriva testerna.
 namespace Assignment2.Tests.Domain.Helpers;
@@ -44,6 +43,7 @@ public class RepositoryExtensions_Tests
         // ASSERT: match ska finnas
         Assert.True(result.Succeeded);
         Assert.Equal(existing, result.Data);
+
         // Verify kontrollerar att WriteAsync aldrig anropades på mockRepo (Times.Never), eftersom ingen ny entitet skulle skrivas till fil i detta testfall.
         _repoMock.Verify(mockRepo => mockRepo.WriteAsync(It.IsAny<IEnumerable<TestEntity>>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -78,6 +78,7 @@ public class RepositoryExtensions_Tests
         // ASSERT: ny entitet ska vara skapad
         Assert.True(result.Succeeded);
         Assert.Equal("Banan", result.Data!.Name);
+
         // Kontrollera att WriteAsync anropades för att spara den nya entiteten
         _repoMock.Verify(repoMock => repoMock.WriteAsync(It.IsAny<IEnumerable<TestEntity>>(), It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -103,6 +104,7 @@ public class RepositoryExtensions_Tests
         Assert.False(result.Succeeded);
         Assert.Equal(500, result.StatusCode);
         Assert.Equal("Läsfel", result.ErrorMessage);
+
         // Kontrollera att WriteAsync aldrig anropades när ReadAsync misslyckades
         _repoMock.Verify(repoMock => repoMock.WriteAsync(It.IsAny<IEnumerable<TestEntity>>(), It.IsAny<CancellationToken>()), Times.Never);
     }

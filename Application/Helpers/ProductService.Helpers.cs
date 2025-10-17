@@ -5,8 +5,6 @@ using ApplicationLayer.Results;
 using Domain.Entities;
 using Domain.Helpers;
 using Domain.Results;
-using System.Linq;
-using System.Xml.Linq;
 namespace ApplicationLayer.Services;
 
 public partial class ProductService

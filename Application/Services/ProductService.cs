@@ -16,6 +16,38 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
     private List<Product> _products = [];
     private bool _isLoaded;
 
+
+    // OperationCanceledException centraliserad till EnsureLoaded (hanterar det i sin catch)
+    public async Task<ServiceResult> EnsureLoadedAsync(CancellationToken ct)
+    {
+        // Listan är laddad sen tidigare
+        if (_isLoaded)
+            return new ServiceResult { Succeeded = true, StatusCode = 200 };
+
+        try
+        {
+            RepositoryResult<IEnumerable<Product>>? loadResult = await _productRepository.ReadAsync(ct);
+            if (!loadResult.Succeeded)
+                return loadResult.MapToServiceResult("Ett okänt fel uppstod vid filhämtning");
+
+            _products = [.. (loadResult.Data ?? [])];
+            _isLoaded = true;
+
+            // Listan var inte laddad från början, ReadAsync kördes och det lyckades.
+            return new ServiceResult { Succeeded = true, StatusCode = 200 };
+        }
+        // Catch-block: hanterar avbryt och oväntade buggar. Sådant som repot inte fångar
+        catch (OperationCanceledException)
+        {
+            return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = "Hämtning avbröts." };
+        }
+        catch (Exception ex)
+        {
+            return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = $"Fel vid filhämtning: {ex.Message}" };
+        }
+    }
+
+
     public async Task<ServiceResult<Product>> SaveProductAsync(ProductCreateRequest createRequest, CancellationToken ct = default)  
     {
         try 
@@ -60,37 +92,9 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
         }
     }
 
-    // OperationCanceledException centraliserad till EnsureLoaded (hanterar det i sin catch)
-    public async Task<ServiceResult> EnsureLoadedAsync(CancellationToken ct) 
-    {
-        if (_isLoaded)
-            return new ServiceResult { Succeeded = true, StatusCode = 200 };
-
-        try
-        {
-            RepositoryResult<IEnumerable<Product>>? loadResult = await _productRepository.ReadAsync(ct);
-            if (!loadResult.Succeeded)
-                return loadResult.MapToServiceResult("Ett okänt fel uppstod vid filhämtning");
-
-            _products = [.. (loadResult.Data ?? [])];
-            _isLoaded = true;
-
-            // Listan var inte laddad från början, ReadAsync kördes och det lyckades.
-            return new ServiceResult { Succeeded = true, StatusCode = 200 };
-        }
-        // Catch-block: hanterar avbryt och oväntade buggar. Sådant som repot inte fångar
-        catch (OperationCanceledException)
-        {
-            return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = "Hämtning avbröts." };
-        }
-        catch (Exception ex)
-        {
-            return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = $"Fel vid filhämtning: {ex.Message}" };
-        }
-    }
 
 
-    // Behöver inte try-catch – anropar bara EnsureLoaded/ReadAsync som redan hanterar felen
+    // Behöver inte try-catch – anropar bara EnsureLoaded och ReadAsync som redan hanterar felen
     public async Task<ServiceResult<IEnumerable<Product>>> GetProductsAsync(CancellationToken ct = default)
     {
         ServiceResult ensureResult = await EnsureLoadedAsync(ct);

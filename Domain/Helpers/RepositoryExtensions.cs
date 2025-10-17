@@ -34,7 +34,7 @@ public static class RepositoryExtensions
         List<T> list = readResult.Data!.ToList();
         list.Add(entity);
 
-        // Skriv till filen så det blir beständigt. 
+        // Skriv till fil så det blir beständigt. 
         RepositoryResult writeResult = await repository.WriteAsync(list, cancellationToken);
         if (!writeResult.Succeeded)
         {
@@ -61,4 +61,4 @@ public static class RepositoryExtensions
   I anropet (lambda): () => new Category { Name = name } 
 
   where T : class = typbegränsning, T måste vara en klass.
-  */
+*/
