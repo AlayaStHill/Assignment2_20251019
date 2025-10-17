@@ -64,7 +64,6 @@ Enhetstester xUnit
 
 Om tid: 
 Få in Header i ProductListView
-Ändra _products i ProductService till _productList
 
 
 

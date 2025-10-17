@@ -6,9 +6,6 @@ using Domain.Interfaces;
 using Domain.Results;
 using Domain.Helpers;
 using Moq;
-
-
-
 // Jag har använt AI och promptteknik som stöd i arbetet med att skriva testerna.
 
 namespace Assignment2.Tests.ApplicationLayer.Services;
@@ -28,7 +25,7 @@ public class ProductService_Tests
         _categoryRepoMock = new Mock<IRepository<Category>>();
         _manufacturerRepoMock = new Mock<IRepository<Manufacturer>>();
 
-        // Injicera mockarna (fejkade repositories) i ProductService. .Object = själva "låtsas-implementationen" av IRepository<T>.
+        // Injicera mockarna (fejkade repositories) i ProductService. .Object = själva låtsas-implementationen av IRepository<T>.
         _productService = new(
             _productRepoMock.Object,
             _categoryRepoMock.Object,
@@ -48,17 +45,17 @@ public class ProductService_Tests
             .ReturnsAsync(RepositoryResult<IEnumerable<Product>>.OK(productList));
 
         // ACT: anropa EnsureLoadedAsync
-        ServiceResult result = await _productService.EnsureLoadedAsync(CancellationToken.None); // Tydlighet, ingen avbrytning
+        ServiceResult result = await _productService.EnsureLoadedAsync(CancellationToken.None); // Tydlighet - ingen avbrytning
 
-        // ASSERT: result ska lyckas 
+        // ASSERT: result ska vara lyckad
         Assert.True(result.Succeeded);
         Assert.Equal(200, result.StatusCode);
 
-        // kontrollera att ReadAsync anropades en gång
+        // kontrollera att ReadAsync anropades exakt en gång
         _productRepoMock.Verify(repoMock => repoMock.ReadAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
-    // Negative case: EnsureLoaded ska returnera ett ServiceResult med errormeddelande
+    // Negative case: EnsureLoaded ska returnera ett ServiceResult med felmeddelande
     [Fact]
     public async Task EnsureLoadedAsync_ShouldReturnError_WhenReadAsyncFails()
     {
@@ -98,7 +95,7 @@ public class ProductService_Tests
         // ACT: hämta produkter
         ServiceResult<IEnumerable<Product>> result = await _productService.GetProductsAsync(CancellationToken.None);
 
-        // ASSERT: result ska lyckas och innehålla två produkter
+        // ASSERT: result ska vara lyckad och innehålla två produkter
         Assert.True(result.Succeeded);
         Assert.Equal(200, result.StatusCode);
         // Säkerställ att Data inte är null innan nästa steg
@@ -155,7 +152,7 @@ public class ProductService_Tests
         // ACT: försök spara produkten
         ServiceResult<Product> result = await _productService.SaveProductAsync(createRequest, CancellationToken.None);
 
-        // ASSERT: result ska lyckas och innehålla den nya produkten
+        // ASSERT: result ska vara lyckad och innehålla den nya produkten
         Assert.True(result.Succeeded);
         Assert.Equal(201, result.StatusCode);
         Assert.NotNull(result.Data); 
@@ -229,7 +226,7 @@ public class ProductService_Tests
     public async Task UpdateProductAsync_ShouldUpdateProduct_WhenRequestIsValid()
     {
         // ARRANGE: befintlig produkt i repo
-        Product existing = new()
+        Product existingProduct = new()
         {
             Id = "1",
             Name = "Banan",
@@ -238,7 +235,7 @@ public class ProductService_Tests
             Manufacturer = new Manufacturer { Id = "20", Name = "Bananträd" }
         };
 
-        List<Product> productList = new() { existing };
+        List<Product> productList = new() { existingProduct };
 
         // ReadAsync: returnera listan med den befintliga produkten
         _productRepoMock
@@ -250,19 +247,17 @@ public class ProductService_Tests
             .Setup(repoMock => repoMock.WriteAsync(It.IsAny<IEnumerable<Product>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(RepositoryResult.NoContent());
 
-        // GetOrCreateAsync (kategori): mocken returnerar Frukt direkt (ignorerar lambda-funktionerna)
+        // Simulera kategori-repo: returnera Frukt när ReadAsync anropas
         _categoryRepoMock
-            .Setup(repoMock => repoMock.GetOrCreateAsync(It.IsAny<Func<Category, bool>>(),
-                                                 It.IsAny<Func<Category>>(),
-                                                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(RepositoryResult<Category>.OK(new Category { Id = "11", Name = "Frukt" }));
+            .Setup(repoMock => repoMock.ReadAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(RepositoryResult<IEnumerable<Category>>.OK(
+                new List<Category> { new Category { Id = "11", Name = "Frukt" } }));
 
-        // GetOrCreateAsync (tillverkare): mocken returnerar Äppelträd direkt (ignorerar lambda-funktionerna)
+        // Simulera tillverkare-repo: returnera Äppelträd när ReadAsync anropas
         _manufacturerRepoMock
-            .Setup(repoMock => repoMock.GetOrCreateAsync(It.IsAny<Func<Manufacturer, bool>>(),
-                                                 It.IsAny<Func<Manufacturer>>(),
-                                                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(RepositoryResult<Manufacturer>.OK(new Manufacturer { Id = "21", Name = "Äppelträd" }));
+            .Setup(repoMock => repoMock.ReadAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(RepositoryResult<IEnumerable<Manufacturer>>.OK(
+                new List<Manufacturer> { new Manufacturer { Id = "21", Name = "Äppelträd" } }));
 
         // Uppdateringsrequest
         ProductUpdateRequest updateRequest = new()
@@ -278,17 +273,17 @@ public class ProductService_Tests
         // ACT: försök uppdatera produkten
         ServiceResult result = await _productService.UpdateProductAsync(updateRequest, CancellationToken.None);
 
-        // ASSERT: result ska vara lyckas 
+        // ASSERT: result ska vara lyckad 
         Assert.True(result.Succeeded);
         Assert.Equal(204, result.StatusCode);
 
         // Kontrollera att produkten uppdaterats korrekt
-        Assert.Equal("Äpple", existing.Name);  
-        Assert.Equal(8m, existing.Price);
-        Assert.NotNull(existing.Category);
-        Assert.Equal("Frukt", existing.Category.Name);
-        Assert.NotNull(existing.Manufacturer);
-        Assert.Equal("Äppelträd", existing.Manufacturer.Name);
+        Assert.Equal("Äpple", existingProduct.Name);  
+        Assert.Equal(8m, existingProduct.Price);
+        Assert.NotNull(existingProduct.Category);
+        Assert.Equal("Frukt", existingProduct.Category.Name);
+        Assert.NotNull(existingProduct.Manufacturer);
+        Assert.Equal("Äppelträd", existingProduct.Manufacturer.Name);
 
         // Kontrollera att WriteAsync anropades
         _productRepoMock.Verify(repoMock => repoMock.WriteAsync(It.IsAny<IEnumerable<Product>>(), It.IsAny<CancellationToken>()), Times.Once);
@@ -323,7 +318,7 @@ public class ProductService_Tests
         // ASSERT: result ska signalera fel
         Assert.False(result.Succeeded);            
         Assert.Equal(404, result.StatusCode);      
-        Assert.Equal("Produkten med Id 1 kunde inte hittas", result.ErrorMessage);
+        Assert.Equal("Produkten med Id 2 kunde inte hittas", result.ErrorMessage);
     }
 
     // Negative case: ogiltigt request ska ge 400 Bad Request.
@@ -369,6 +364,7 @@ public class ProductService_Tests
         ProductUpdateRequest request = new ProductUpdateRequest
         {
             Id = "1",
+            // ska behandlas som Äpple
             Name = "Äpple",     
             Price = 8m
         };
@@ -381,5 +377,85 @@ public class ProductService_Tests
         Assert.Equal(409, result.StatusCode);          
         Assert.NotNull(result.ErrorMessage);           
         Assert.Contains("En produkt med namnet Äpple finns redan.", result.ErrorMessage); 
+    }
+
+
+
+    // Happy path: produkten finns och ska tas bort
+    [Fact]
+    public async Task DeleteProductAsync_ShouldRemoveProduct_WhenProductExists()
+    {
+        // ARRANGE: skapa produkten som ska tas bort
+        Product existingProduct = new() { Id = "1", Name = "Banan", Price = 6m };
+
+        // Simulera att ReadAsync returnerar en lista med produkten
+        _productRepoMock
+            .Setup(repoMock => repoMock.ReadAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(RepositoryResult<IEnumerable<Product>>.OK(new List<Product> { existingProduct }));
+
+        // Simulera att WriteAsync lyckas när listan sparas efter borttagning
+        _productRepoMock
+            .Setup(repoMock => repoMock.WriteAsync(It.IsAny<IEnumerable<Product>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(RepositoryResult.NoContent());
+
+        // ACT: anropa DeleteProductAsync och skicka in Id för produkten som ska tas bort
+        ServiceResult result = await _productService.DeleteProductAsync("1", CancellationToken.None);
+
+        // ASSERT: result ska vara lyckad
+        // null-check innan nästa steg
+        Assert.NotNull(result); 
+        Assert.True(result.Succeeded);
+        Assert.Equal(204, result.StatusCode); 
+        Assert.Null(result.ErrorMessage);
+
+        // Kontrollera att WriteAsync anropades
+        _productRepoMock.Verify(repoMock => repoMock.WriteAsync(It.IsAny<IEnumerable<Product>>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    // Negative case: produkten finns inte i listan
+    [Fact]
+    public async Task DeleteProductAsync_ShouldReturnNotFound_WhenProductDoesNotExist()
+    {
+        // ARRANGE: simulera att ReadAsync returnerar en tom lista
+        _productRepoMock
+            .Setup(repoMock => repoMock.ReadAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(RepositoryResult<IEnumerable<Product>>.OK(new List<Product>()));
+
+        // ACT
+        ServiceResult result = await _productService.DeleteProductAsync("3", CancellationToken.None);
+
+        // ASSERT: result ska signalera fel med korrekt felmeddelande
+        // null-check
+        Assert.NotNull(result); 
+        Assert.False(result.Succeeded); 
+        Assert.Equal(404, result.StatusCode); 
+        Assert.Equal("Produkten med Id 3 kunde inte hittas", result.ErrorMessage); 
+    }
+
+    // Negative case: WriteAsync-fel: misslyckas att spara ändringen efter borttagning
+    [Fact]
+    public async Task DeleteProductAsync_ShouldReturnError_WhenWriteAsyncFails()
+    {
+        // ARRANGE: skapa produkten som ska tas bort
+        Product existingProduct = new Product { Id = "1", Name = "Banan", Price = 6m };
+
+        // Simulera att ReadAsync returnerar listan med produkten
+        _productRepoMock
+            .Setup(repoMock => repoMock.ReadAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(RepositoryResult<IEnumerable<Product>>.OK(new List<Product> { existingProduct }));
+
+        // Simulera att WriteAsync misslyckas att spara
+        _productRepoMock
+            .Setup(repoMock => repoMock.WriteAsync(It.IsAny<IEnumerable<Product>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(RepositoryResult.InternalServerError("Ett okänt fel uppstod vid filsparning"));
+
+        // ACT
+        ServiceResult result = await _productService.DeleteProductAsync("1", CancellationToken.None);
+
+        // ASSERT: result ska signalera fel med korrekt felmeddelande
+        Assert.NotNull(result); 
+        Assert.False(result.Succeeded); 
+        Assert.Equal(500, result.StatusCode);
+        Assert.Equal("Ett okänt fel uppstod vid filsparning", result.ErrorMessage);
     }
 }
