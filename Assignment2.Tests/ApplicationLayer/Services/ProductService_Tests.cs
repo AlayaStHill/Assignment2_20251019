@@ -6,6 +6,7 @@ using Domain.Results;
 using Moq;
 
 
+
 // Jag har använt AI och promptteknik som stöd i arbetet med att skriva testerna.
 
 namespace Assignment2.Tests.ApplicationLayer.Services;
@@ -38,11 +39,11 @@ public class ProductService_Tests
     public async Task EnsureLoadedAsync_ShouldLoadProducts_WhenRepositoryReturnsData()
     {
         // ARRANGE: simulera att ReadAsync returnerar en lista med en produkt
-        List<Product> products = new() { new Product { Id = "1", Name = "Banan", Price = 6m } };
+        List<Product> productList = new() { new Product { Id = "1", Name = "Banan", Price = 6m } };
 
         _productRepoMock
             .Setup(repoMock => repoMock.ReadAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(RepositoryResult<IEnumerable<Product>>.OK(products));
+            .ReturnsAsync(RepositoryResult<IEnumerable<Product>>.OK(productList));
 
         // ACT: anropa EnsureLoadedAsync
         ServiceResult result = await _productService.EnsureLoadedAsync(CancellationToken.None); // Tydlighet, ingen avbrytning
@@ -78,4 +79,52 @@ public class ProductService_Tests
 
 
 
+    // Happy path
+    [Fact]
+    public async Task GetProductsAsync_ShouldReturnProducts_WhenEnsureLoadedSucceeds()
+    {
+        // ARRANGE: simulera en lista av produkter från repository
+        List<Product> productList = new()
+        {
+            new Product { Id = "1", Name = "Banan", Price = 6m },
+            new Product { Id = "2", Name = "Äpple", Price = 8m }
+        };
+
+        _productRepoMock
+            .Setup(repoMock => repoMock.ReadAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(RepositoryResult<IEnumerable<Product>>.OK(productList));
+
+        // ACT: hämta produkter
+        ServiceResult<IEnumerable<Product>> result = await _productService.GetProductsAsync(CancellationToken.None);
+
+        // ASSERT: resultatet ska lyckas och innehålla två produkter
+        Assert.True(result.Succeeded);
+        Assert.Equal(200, result.StatusCode);
+        // Säkerställ att Data inte är null innan nästa steg
+        Assert.NotNull(result.Data);
+        Assert.Equal(2, result.Data!.Count());
+        Assert.Contains(result.Data!, product => product.Name == "Banan");
+        Assert.Contains(result.Data!, product => product.Name == "Äpple");
+    }
+
+    // Negative case: GetProductsAsync ska returnera fel med tom produktlista
+    [Fact]
+    public async Task GetProductsAsync_ShouldReturnError_WhenEnsureLoadedFails()
+    {
+        // ARRANGE: simulera att ReadAsync misslyckas
+        _productRepoMock
+            .Setup(repoMock => repoMock.ReadAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(RepositoryResult<IEnumerable<Product>>.InternalServerError("Läsfel"));
+
+        // ACT: anropa GetProductsAsync
+        ServiceResult<IEnumerable<Product>> result = await _productService.GetProductsAsync(CancellationToken.None);
+
+        // ASSERT: resultatet ska signalera fel
+        Assert.False(result.Succeeded);
+        Assert.Equal(500, result.StatusCode);
+        Assert.NotNull(result.Data);                        
+        Assert.Empty(result.Data);                          
+        Assert.NotNull(result.ErrorMessage);                
+        Assert.Equal("Ett okänt fel uppstod vid filhämtning", result.ErrorMessage);
+    }
 }

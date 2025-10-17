@@ -41,13 +41,13 @@ public partial class ProductService
     private Product? FindExistingProduct(string? id)
     {
         if (string.IsNullOrWhiteSpace(id)) return null;
-        return _products.FirstOrDefault(product => product.Id == id);
+        return _productList.FirstOrDefault(product => product.Id == id);
     }
 
-    // Finns en produkt i _products, vars ID inte är = requestId men vars namn är = requestNamn. Använda på CreateRequest då id valbart
+    // Finns en produkt i _productList, vars ID inte är = requestId men vars namn är = requestNamn. Använda på CreateRequest då id valbart
     private bool IsDuplicateName(string requestName, string? requestId = null)
     {
-        return _products.Any(product => string.Equals(product.Name, requestName, StringComparison.OrdinalIgnoreCase)
+        return _productList.Any(product => string.Equals(product.Name, requestName, StringComparison.OrdinalIgnoreCase)
             && (requestId is null || product.Id != requestId));
     }
 

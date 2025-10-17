@@ -13,7 +13,7 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
     private readonly IRepository<Product> _productRepository = productRepository;
     private readonly IRepository<Category> _categoryRepository = categoryRepository;
     private readonly IRepository<Manufacturer> _manufacturerRepository = manufacturerRepository;
-    private List<Product> _products = [];
+    private List<Product> _productList = [];
     private bool _isLoaded;
 
 
@@ -30,7 +30,7 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
             if (!loadResult.Succeeded)
                 return loadResult.MapToServiceResult("Ett okänt fel uppstod vid filhämtning");
 
-            _products = [.. (loadResult.Data ?? [])];
+            _productList = [.. (loadResult.Data ?? [])];
             _isLoaded = true;
 
             // Listan var inte laddad från början, ReadAsync kördes och det lyckades.
@@ -74,9 +74,9 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
 
             Product newProduct = ProductFactory.MapRequestToProduct(createRequest);
             newProduct.Name = trimmedName;
-            _products.Add(newProduct);
+            _productList.Add(newProduct);
 
-            RepositoryResult saveResult = await _productRepository.WriteAsync(_products, ct);
+            RepositoryResult saveResult = await _productRepository.WriteAsync(_productList, ct);
             if (!saveResult.Succeeded)
                 return saveResult.MapToServiceResultAs<Product>("Kunde inte spara till fil.");
 
@@ -102,7 +102,7 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
             return new ServiceResult<IEnumerable<Product>> { Succeeded = false, StatusCode = 500, ErrorMessage = ensureResult.ErrorMessage, Data = [] };
 
         // spreadoperator, tar den nya listan och sprider det i den nya. Istället för att loopa igenom med foreach tar den hela listan på en gång
-        return new ServiceResult<IEnumerable<Product>> { Succeeded = true, StatusCode = 200, Data = [.. _products] };
+        return new ServiceResult<IEnumerable<Product>> { Succeeded = true, StatusCode = 200, Data = [.. _productList] };
     }
 
 
@@ -142,7 +142,7 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
             // .Value hämtar själva värdet från decimal? (nullable). Man kan inte tilldela decimal direkt från decimal? utan att ta ut värdet.
             existingProduct.Price = updateRequest.Price!.Value; 
 
-            RepositoryResult saveResult = await _productRepository.WriteAsync(_products, ct);
+            RepositoryResult saveResult = await _productRepository.WriteAsync(_productList, ct);
             if (!saveResult.Succeeded)
                 return saveResult.MapToServiceResult("Ett okänt fel uppstod vid filsparning");
 
@@ -173,10 +173,10 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
             if (productToDelete is null)
                 return new ServiceResult { Succeeded = false, StatusCode = 404, ErrorMessage = $"Produkten med Id {id} kunde inte hittas" };
 
-            _products.Remove(productToDelete);
+            _productList.Remove(productToDelete);
 
             // Spara till fil, annars uppdateras inte listan och ändringen ligger bara i minnet och försvinner när programmet stängs.
-            RepositoryResult repoSaveResult = await _productRepository.WriteAsync(_products, ct);
+            RepositoryResult repoSaveResult = await _productRepository.WriteAsync(_productList, ct);
             if (!repoSaveResult.Succeeded)
                 return repoSaveResult.MapToServiceResult("Ett okänt fel uppstod vid filsparning");
 
