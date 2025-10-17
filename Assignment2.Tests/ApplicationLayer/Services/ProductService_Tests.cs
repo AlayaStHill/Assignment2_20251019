@@ -4,7 +4,9 @@ using ApplicationLayer.Services;
 using Domain.Entities;
 using Domain.Interfaces;
 using Domain.Results;
+using Domain.Helpers;
 using Moq;
+
 
 
 // Jag har använt AI och promptteknik som stöd i arbetet med att skriva testerna.
@@ -48,7 +50,7 @@ public class ProductService_Tests
         // ACT: anropa EnsureLoadedAsync
         ServiceResult result = await _productService.EnsureLoadedAsync(CancellationToken.None); // Tydlighet, ingen avbrytning
 
-        // ASSERT: resultatet ska lyckas och statuskoden vara 200
+        // ASSERT: result ska lyckas 
         Assert.True(result.Succeeded);
         Assert.Equal(200, result.StatusCode);
 
@@ -68,7 +70,7 @@ public class ProductService_Tests
         // ACT: anropa EnsureLoadedAsync
         ServiceResult result = await _productService.EnsureLoadedAsync(CancellationToken.None);
 
-        // ASSERT: resultatet ska vara misslyckat
+        // ASSERT: result ska signalera fel
         Assert.False(result.Succeeded);
         Assert.Equal(500, result.StatusCode);
         // Säkerställ att Data inte är null innan nästa steg
@@ -96,7 +98,7 @@ public class ProductService_Tests
         // ACT: hämta produkter
         ServiceResult<IEnumerable<Product>> result = await _productService.GetProductsAsync(CancellationToken.None);
 
-        // ASSERT: resultatet ska lyckas och innehålla två produkter
+        // ASSERT: result ska lyckas och innehålla två produkter
         Assert.True(result.Succeeded);
         Assert.Equal(200, result.StatusCode);
         // Säkerställ att Data inte är null innan nästa steg
@@ -118,7 +120,7 @@ public class ProductService_Tests
         // ACT: anropa GetProductsAsync
         ServiceResult<IEnumerable<Product>> result = await _productService.GetProductsAsync(CancellationToken.None);
 
-        // ASSERT: resultatet ska signalera fel
+        // ASSERT: result ska signalera fel
         Assert.False(result.Succeeded);
         Assert.Equal(500, result.StatusCode);
         Assert.NotNull(result.Data);                        
@@ -153,7 +155,7 @@ public class ProductService_Tests
         // ACT: försök spara produkten
         ServiceResult<Product> result = await _productService.SaveProductAsync(createRequest, CancellationToken.None);
 
-        // ASSERT: resultatet ska lyckas och innehålla den nya produkten
+        // ASSERT: result ska lyckas och innehålla den nya produkten
         Assert.True(result.Succeeded);
         Assert.Equal(201, result.StatusCode);
         Assert.NotNull(result.Data); 
@@ -179,7 +181,7 @@ public class ProductService_Tests
         // ACT: försök spara produkten
         ServiceResult<Product> result = await _productService.SaveProductAsync(createRequest, CancellationToken.None);
 
-        // ASSERT: resultatet ska signalera valideringsfel
+        // ASSERT: result ska signalera valideringsfel
         Assert.False(result.Succeeded);
         Assert.Equal(400, result.StatusCode);
         // produkten ska inte finnas
@@ -209,7 +211,7 @@ public class ProductService_Tests
         // ACT: försök spara produkten
         ServiceResult<Product> result = await _productService.SaveProductAsync(createRequest, CancellationToken.None);
 
-        // ASSERT: resultatet ska signalera valideringsfel
+        // ASSERT: result ska signalera valideringsfel
         Assert.False(result.Succeeded);
         Assert.Equal(400, result.StatusCode);
         // produkten ska inte skapas
@@ -219,5 +221,165 @@ public class ProductService_Tests
 
         // Kontrollera att WriteAsync aldrig anropades
         _productRepoMock.Verify(repoMock => repoMock.WriteAsync(It.IsAny<IEnumerable<Product>>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+
+    // Happy path: när request är giltig och befintlig produkt hittas, uppdateras namn, pris, kategori och tillverkare.
+        [Fact]
+    public async Task UpdateProductAsync_ShouldUpdateProduct_WhenRequestIsValid()
+    {
+        // ARRANGE: befintlig produkt i repo
+        Product existing = new()
+        {
+            Id = "1",
+            Name = "Banan",
+            Price = 6m,
+            Category = new Category { Id = "10", Name = "Grönsaker" },
+            Manufacturer = new Manufacturer { Id = "20", Name = "Bananträd" }
+        };
+
+        List<Product> productList = new() { existing };
+
+        // ReadAsync: returnera listan med den befintliga produkten
+        _productRepoMock
+            .Setup(repoMock => repoMock.ReadAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(RepositoryResult<IEnumerable<Product>>.OK(productList));
+
+        // WriteAsync: simulera att spara lyckas
+        _productRepoMock
+            .Setup(repoMock => repoMock.WriteAsync(It.IsAny<IEnumerable<Product>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(RepositoryResult.NoContent());
+
+        // GetOrCreateAsync (kategori): mocken returnerar Frukt direkt (ignorerar lambda-funktionerna)
+        _categoryRepoMock
+            .Setup(repoMock => repoMock.GetOrCreateAsync(It.IsAny<Func<Category, bool>>(),
+                                                 It.IsAny<Func<Category>>(),
+                                                 It.IsAny<CancellationToken>()))
+            .ReturnsAsync(RepositoryResult<Category>.OK(new Category { Id = "11", Name = "Frukt" }));
+
+        // GetOrCreateAsync (tillverkare): mocken returnerar Äppelträd direkt (ignorerar lambda-funktionerna)
+        _manufacturerRepoMock
+            .Setup(repoMock => repoMock.GetOrCreateAsync(It.IsAny<Func<Manufacturer, bool>>(),
+                                                 It.IsAny<Func<Manufacturer>>(),
+                                                 It.IsAny<CancellationToken>()))
+            .ReturnsAsync(RepositoryResult<Manufacturer>.OK(new Manufacturer { Id = "21", Name = "Äppelträd" }));
+
+        // Uppdateringsrequest
+        ProductUpdateRequest updateRequest = new()
+        {
+            Id = "1",
+            // trimmning ska ske
+            Name = "  Äpple  ",   
+            Price = 8m,
+            CategoryName = "  Frukt  ",
+            ManufacturerName = "  Äppelträd  "
+        };
+
+        // ACT: försök uppdatera produkten
+        ServiceResult result = await _productService.UpdateProductAsync(updateRequest, CancellationToken.None);
+
+        // ASSERT: result ska vara lyckas 
+        Assert.True(result.Succeeded);
+        Assert.Equal(204, result.StatusCode);
+
+        // Kontrollera att produkten uppdaterats korrekt
+        Assert.Equal("Äpple", existing.Name);  
+        Assert.Equal(8m, existing.Price);
+        Assert.NotNull(existing.Category);
+        Assert.Equal("Frukt", existing.Category.Name);
+        Assert.NotNull(existing.Manufacturer);
+        Assert.Equal("Äppelträd", existing.Manufacturer.Name);
+
+        // Kontrollera att WriteAsync anropades
+        _productRepoMock.Verify(repoMock => repoMock.WriteAsync(It.IsAny<IEnumerable<Product>>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    // Negative case: när produkt-id inte finns ska UpdateProductAsync returnera 404 NotFound.
+    [Fact]
+    public async Task UpdateProductAsync_ShouldReturnNotFound_WhenProductDoesNotExist()
+    {
+        // ARRANGE: lista med en annan produkt än den som updateRequest anger
+        List<Product> productList = new()
+        {
+            new Product { Id = "1", Name = "Banan", Price = 6m }
+        };
+
+        // Repo returnerar listan
+        _productRepoMock
+            .Setup(repoMock => repoMock.ReadAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(RepositoryResult<IEnumerable<Product>>.OK(productList));
+
+        // updateRequest matchar ingen befintlig produkt
+        ProductUpdateRequest updateRequest = new()
+        {
+            Id = "2",                
+            Name = "Äpple",
+            Price = 8m
+        };
+
+        // ACT:
+        ServiceResult result = await _productService.UpdateProductAsync(updateRequest, CancellationToken.None);
+
+        // ASSERT: result ska signalera fel
+        Assert.False(result.Succeeded);            
+        Assert.Equal(404, result.StatusCode);      
+        Assert.Equal("Produkten med Id 1 kunde inte hittas", result.ErrorMessage);
+    }
+
+    // Negative case: ogiltigt request ska ge 400 Bad Request.
+    [Fact]
+    public async Task UpdateProductAsync_ShouldReturnBadRequest_WhenRequestIsInvalid()
+    {
+        // ARRANGE: ogiltig request (namn och pris saknas)
+        ProductUpdateRequest updateRequest = new()
+        {
+            Id = "1",
+            Name = "",
+            Price = null
+        };
+
+        // ACT
+        ServiceResult result = await _productService.UpdateProductAsync(updateRequest, CancellationToken.None);
+
+        // ASSERT: result ska signalera fel
+        Assert.False(result.Succeeded);                
+        Assert.Equal(400, result.StatusCode);         
+        Assert.NotNull(result.ErrorMessage);           
+        Assert.Contains("Namn måste anges.", result.ErrorMessage);   
+        Assert.Contains("Pris måste anges.", result.ErrorMessage);   
+    }
+
+    // Negative case: om en befintlig produkt redan har samma namn ska metoden, returnera 409 Conflict.
+    [Fact]
+    public async Task UpdateProductAsync_ShouldReturnConflict_WhenDuplicateNameExists()
+    {
+        // ARRANGE: Två produkter i listan: updateRequest försöker uppdatera produkt 1 till samma namn som produkt 2.  
+        List<Product> productList = new()
+        {
+            new Product { Id = "1", Name = "Banan", Price = 6m },
+            new Product { Id = "2", Name = "Äpple", Price = 8m }
+        };
+
+        // Repo returnerar listan
+        _productRepoMock
+            .Setup(repoMock => repoMock.ReadAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(RepositoryResult<IEnumerable<Product>>.OK(productList));
+
+        // Request försöker uppdatera produkt 1 med samma namn som produkt 2
+        ProductUpdateRequest request = new ProductUpdateRequest
+        {
+            Id = "1",
+            Name = "Äpple",     
+            Price = 8m
+        };
+
+        // ACT
+        ServiceResult result = await _productService.UpdateProductAsync(request, CancellationToken.None);
+
+        // ASSERT: result ska signalera fel
+        Assert.False(result.Succeeded);                
+        Assert.Equal(409, result.StatusCode);          
+        Assert.NotNull(result.ErrorMessage);           
+        Assert.Contains("En produkt med namnet Äpple finns redan.", result.ErrorMessage); 
     }
 }

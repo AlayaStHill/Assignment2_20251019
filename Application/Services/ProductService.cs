@@ -118,12 +118,13 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
             if (!ensureResult.Succeeded)
                 return ensureResult;
 
+            // Null-check: om produkten inte hittas, returnera 404
             if (FindExistingProduct(updateRequest.Id) is not Product existingProduct)
                 return new ServiceResult { Succeeded = false, StatusCode = 404, ErrorMessage = $"Produkten med Id {updateRequest.Id} kunde inte hittas" };
 
             string trimmedName = updateRequest.Name.Trim();
 
-            // Kontrollera om en produkt med samma namn, men olika ID redan finns. 
+            // Kontrollera om en befintlig produkt med samma namn, men olika ID redan finns. 
             if (IsDuplicateName(trimmedName, updateRequest.Id))
                 return new ServiceResult { Succeeded = false, StatusCode = 409, ErrorMessage = $"En produkt med namnet {updateRequest.Name} finns redan." };
 
