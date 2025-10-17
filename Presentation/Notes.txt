@@ -62,9 +62,12 @@ ATT GÖRA:
 Enhetstester xUnit 
 (integrationstest Repository??)
 
+Om tid: 
+Få in Header i ProductListView
 
 
 
+fix(ProductService.Helpers): update UpdateCategory- and UpdateManufacturer async with trim for correct dublettlogik?
 
 
 DDD (Domain-Driven Design)

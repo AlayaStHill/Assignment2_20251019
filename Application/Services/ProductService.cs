@@ -13,8 +13,40 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
     private readonly IRepository<Product> _productRepository = productRepository;
     private readonly IRepository<Category> _categoryRepository = categoryRepository;
     private readonly IRepository<Manufacturer> _manufacturerRepository = manufacturerRepository;
-    private List<Product> _products = [];
+    private List<Product> _productList = [];
     private bool _isLoaded;
+
+
+    // OperationCanceledException centraliserad till EnsureLoaded (hanterar det i sin catch)
+    public async Task<ServiceResult> EnsureLoadedAsync(CancellationToken ct)
+    {
+        // Listan är laddad sen tidigare
+        if (_isLoaded)
+            return new ServiceResult { Succeeded = true, StatusCode = 200 };
+
+        try
+        {
+            RepositoryResult<IEnumerable<Product>>? loadResult = await _productRepository.ReadAsync(ct);
+            if (!loadResult.Succeeded)
+                return loadResult.MapToServiceResult("Ett okänt fel uppstod vid filhämtning");
+
+            _productList = [.. (loadResult.Data ?? [])];
+            _isLoaded = true;
+
+            // Listan var inte laddad från början, ReadAsync kördes och det lyckades.
+            return new ServiceResult { Succeeded = true, StatusCode = 200 };
+        }
+        // Catch-block: hanterar avbryt och oväntade buggar. Sådant som repot inte fångar
+        catch (OperationCanceledException)
+        {
+            return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = "Hämtning avbröts." };
+        }
+        catch (Exception ex)
+        {
+            return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = $"Fel vid filhämtning: {ex.Message}" };
+        }
+    }
+
 
     public async Task<ServiceResult<Product>> SaveProductAsync(ProductCreateRequest createRequest, CancellationToken ct = default)  
     {
@@ -42,9 +74,9 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
 
             Product newProduct = ProductFactory.MapRequestToProduct(createRequest);
             newProduct.Name = trimmedName;
-            _products.Add(newProduct);
+            _productList.Add(newProduct);
 
-            RepositoryResult saveResult = await _productRepository.WriteAsync(_products, ct);
+            RepositoryResult saveResult = await _productRepository.WriteAsync(_productList, ct);
             if (!saveResult.Succeeded)
                 return saveResult.MapToServiceResultAs<Product>("Kunde inte spara till fil.");
 
@@ -60,37 +92,9 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
         }
     }
 
-    // OperationCanceledException centraliserad till EnsureLoaded (hanterar det i sin catch)
-    public async Task<ServiceResult> EnsureLoadedAsync(CancellationToken ct) 
-    {
-        if (_isLoaded)
-            return new ServiceResult { Succeeded = true, StatusCode = 200 };
-
-        try
-        {
-            RepositoryResult<IEnumerable<Product>>? loadResult = await _productRepository.ReadAsync(ct);
-            if (!loadResult.Succeeded)
-                return loadResult.MapToServiceResult("Ett okänt fel uppstod vid filhämtning");
-
-            _products = [.. (loadResult.Data ?? [])];
-            _isLoaded = true;
-
-            // Listan var inte laddad från början, ReadAsync kördes och det lyckades.
-            return new ServiceResult { Succeeded = true, StatusCode = 200 };
-        }
-        // Catch-block: hanterar avbryt och oväntade buggar. Sådant som repot inte fångar
-        catch (OperationCanceledException)
-        {
-            return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = "Hämtning avbröts." };
-        }
-        catch (Exception ex)
-        {
-            return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = $"Fel vid filhämtning: {ex.Message}" };
-        }
-    }
 
 
-    // Behöver inte try-catch – anropar bara EnsureLoaded/ReadAsync som redan hanterar felen
+    // Behöver inte try-catch – anropar bara EnsureLoaded och ReadAsync som redan hanterar felen
     public async Task<ServiceResult<IEnumerable<Product>>> GetProductsAsync(CancellationToken ct = default)
     {
         ServiceResult ensureResult = await EnsureLoadedAsync(ct);
@@ -98,7 +102,7 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
             return new ServiceResult<IEnumerable<Product>> { Succeeded = false, StatusCode = 500, ErrorMessage = ensureResult.ErrorMessage, Data = [] };
 
         // spreadoperator, tar den nya listan och sprider det i den nya. Istället för att loopa igenom med foreach tar den hela listan på en gång
-        return new ServiceResult<IEnumerable<Product>> { Succeeded = true, StatusCode = 200, Data = [.. _products] };
+        return new ServiceResult<IEnumerable<Product>> { Succeeded = true, StatusCode = 200, Data = [.. _productList] };
     }
 
 
@@ -114,12 +118,13 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
             if (!ensureResult.Succeeded)
                 return ensureResult;
 
+            // Null-check: om produkten inte hittas, returnera 404
             if (FindExistingProduct(updateRequest.Id) is not Product existingProduct)
                 return new ServiceResult { Succeeded = false, StatusCode = 404, ErrorMessage = $"Produkten med Id {updateRequest.Id} kunde inte hittas" };
 
             string trimmedName = updateRequest.Name.Trim();
 
-            // Kontrollera om en produkt med samma namn, men olika ID redan finns. 
+            // Kontrollera om en befintlig produkt med samma namn, men olika ID redan finns. 
             if (IsDuplicateName(trimmedName, updateRequest.Id))
                 return new ServiceResult { Succeeded = false, StatusCode = 409, ErrorMessage = $"En produkt med namnet {updateRequest.Name} finns redan." };
 
@@ -138,7 +143,7 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
             // .Value hämtar själva värdet från decimal? (nullable). Man kan inte tilldela decimal direkt från decimal? utan att ta ut värdet.
             existingProduct.Price = updateRequest.Price!.Value; 
 
-            RepositoryResult saveResult = await _productRepository.WriteAsync(_products, ct);
+            RepositoryResult saveResult = await _productRepository.WriteAsync(_productList, ct);
             if (!saveResult.Succeeded)
                 return saveResult.MapToServiceResult("Ett okänt fel uppstod vid filsparning");
 
@@ -169,10 +174,10 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
             if (productToDelete is null)
                 return new ServiceResult { Succeeded = false, StatusCode = 404, ErrorMessage = $"Produkten med Id {id} kunde inte hittas" };
 
-            _products.Remove(productToDelete);
+            _productList.Remove(productToDelete);
 
             // Spara till fil, annars uppdateras inte listan och ändringen ligger bara i minnet och försvinner när programmet stängs.
-            RepositoryResult repoSaveResult = await _productRepository.WriteAsync(_products, ct);
+            RepositoryResult repoSaveResult = await _productRepository.WriteAsync(_productList, ct);
             if (!repoSaveResult.Succeeded)
                 return repoSaveResult.MapToServiceResult("Ett okänt fel uppstod vid filsparning");
 

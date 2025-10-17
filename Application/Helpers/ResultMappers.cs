@@ -3,7 +3,6 @@ using Domain.Results;
 
 namespace ApplicationLayer.Helpers;
 // Översätter RepoResult till ServiceResult. Ger läsbarhet och mindre duplicering, men behåller specificitet i felmeddelanden. 
-
 public static class ResultMappers
 {
     // RepositoryResult -> ServiceResult (utan data)

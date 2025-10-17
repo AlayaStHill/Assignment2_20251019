@@ -35,8 +35,7 @@
              d:DesignHeight="500" d:DesignWidth="800">
 
     <Grid Margin="20">
-
-        <Grid x:Name="OriginalGrid" Visibility="Visible" Grid.IsSharedSizeScope="True">
+        <Grid x:Name="OriginalGrid" Grid.IsSharedSizeScope="True">
             <Grid.RowDefinitions>
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="auto" />
@@ -52,13 +51,13 @@
             <!-- Ladda om/Avbryt och Ny produkt-->
             <StackPanel Orientation="Horizontal" Grid.Row="2" Margin="0 0 0 10" HorizontalAlignment="Left">
                 <Button Style="{StaticResource ReloadCancelButtonStyle}" Margin="0 10 10 0" Padding="5 5" MinWidth="65" />
-                <Button Grid.Column="1" Command="{Binding NavigateToProductAddViewCommand}" Content="Ny produkt" VerticalAlignment="Center" Margin="0 10 0 0"  MinWidth="65" Padding="5 5" Background="LightBlue" FontSize="10" FontWeight="Bold"/>
+                <Button Command="{Binding NavigateToProductAddViewCommand}" Content="Ny produkt" VerticalAlignment="Center" Margin="0 10 0 0"  MinWidth="65" Padding="5 5" Background="LightBlue" FontSize="10" FontWeight="Bold"/>
             </StackPanel>
 
             <!-- Produktlista -->
-            <ListView Grid.Row="3"  Grid.IsSharedSizeScope="True" ItemsSource="{Binding ProductList}" HorizontalContentAlignment="Stretch">
+            <ListView Grid.Row="3" ItemsSource="{Binding ProductList}" HorizontalContentAlignment="Stretch">
                 <ListView.ItemTemplate>
-                    <DataTemplate DataType="x:Type entities:Product">
+                    <DataTemplate DataType="{x:Type entities:Product}">
                         <Grid Margin="0 3">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition  Width="Auto" SharedSizeGroup="NameColumn" />
@@ -78,149 +77,11 @@
                                 <Button Content="Redigera" Background="#C9D6DF" Padding="5 5" Margin="0 0 8 0" FontSize="10" CommandParameter="{Binding .}" Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
                                 <Button Content="Ta bort" Background="#F28B82" Padding="5 5" FontSize="10" CommandParameter="{Binding Id}" Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
                             </StackPanel>
-
                         </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
-
-
         </Grid>
-
-        
-        
-        
-        
-        
-        
-        
-        <Grid Margin="20">
-            <Grid x:Name="TestGrid" Visibility="Collapsed" Grid.IsSharedSizeScope="True">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <!-- Status -->
-                    <RowDefinition Height="Auto" />
-                    <!-- Titel -->
-                    <RowDefinition Height="Auto" />
-                    <!-- Knappar -->
-                    <RowDefinition Height="*" />
-                    <!-- Lista -->
-                </Grid.RowDefinitions>
-
-                <!-- Statusmeddelande -->
-                <TextBlock Grid.Row="0"
-                   Text="{Binding StatusMessage}"
-                   Foreground="{Binding StatusColor}"
-                   TextWrapping="Wrap" />
-
-                <!-- Titel -->
-                <TextBlock Grid.Row="1"
-                   VerticalAlignment="Center"
-                   Text="{Binding Title, FallbackValue=Produktlista}"
-                   FontWeight="Bold"
-                   FontSize="18"
-                   Margin="0 0 0 10" />
-
-                <!-- Knappar: Ladda om / Avbryt växlar synlighet. Ny produkt separat. -->
-                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0 0 0 10" HorizontalAlignment="Left">
-                    <!-- Ladda om (syns när Refresh INTE kör) -->
-                    <Button Content="Ladda om"
-                    Command="{Binding RefreshCommand}"
-                    Margin="0 0 10 0"
-                    Padding="5 5"
-                    MinWidth="85">
-                        <Button.Style>
-                            <Style TargetType="Button">
-                                <Setter Property="Visibility" Value="Visible"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding RefreshCommand.IsRunning}" Value="True">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
-
-                    <!-- Avbryt (syns när Refresh kör) -->
-                    <Button Content="Avbryt"
-            Command="{Binding CancelRefreshCommand}"
-            Background="#F28B82"
-            Margin="0 0 10 0"
-            Padding="5 5"
-            MinWidth="85">
-                        <Button.Style>
-                            <Style TargetType="Button">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding RefreshCommand.IsRunning}" Value="True">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Button.Style>
-                    </Button>
-
-                    <!-- Ny produkt -->
-                    <Button Content="Ny produkt"
-            Command="{Binding NavigateToProductAddViewCommand}"
-            Padding="5 5"
-            MinWidth="85"
-            Background="LightBlue"
-            FontSize="10"
-            FontWeight="Bold"/>
-                </StackPanel>
-
-                <!-- Produktlista: ligger direkt i Grid.Row=3 (inte inne i StackPanel) -->
-                <ListView Grid.Row="3"
-                  Grid.IsSharedSizeScope="True"
-                  ItemsSource="{Binding ProductList}"
-                  HorizontalContentAlignment="Stretch">
-                    <ListView.ItemTemplate>
-                        <DataTemplate DataType="{x:Type entities:Product}">
-                            <Grid Margin="0 3">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" SharedSizeGroup="NameColumn" />
-                                    <ColumnDefinition Width="Auto" SharedSizeGroup="PriceColumn" />
-                                    <ColumnDefinition Width="Auto" SharedSizeGroup="CategoryColumn" />
-                                    <ColumnDefinition Width="Auto" SharedSizeGroup="ManufacturerColumn" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-
-                                <TextBlock Grid.Column="0" Text="{Binding Name}" VerticalAlignment="Center" Margin="7 0"/>
-                                <TextBlock Grid.Column="1" Text="{Binding Price}" VerticalAlignment="Center" Margin="7 0" />
-                                <TextBlock Grid.Column="2" Text="{Binding Category.Name, FallbackValue='Ej inlagd', TargetNullValue='Ej inlagd'}" VerticalAlignment="Center" Style="{StaticResource MissingValueTextStyle}" Margin="7 0"/>
-                                <TextBlock Grid.Column="3" Text="{Binding Manufacturer.Name, FallbackValue='Ej inlagd', TargetNullValue='Ej inlagd'}" VerticalAlignment="Center" Style="{StaticResource MissingValueTextStyle}" Margin="7 0"/>
-
-                                <!-- Åtgärder -->
-                                <StackPanel Grid.Column="4" Orientation="Horizontal" HorizontalAlignment="Right">
-                                    <Button Content="Redigera"
-                                    Background="#C9D6DF"
-                                    Padding="5 5"
-                                    Margin="0 0 8 0"
-                                    FontSize="10"
-                                    CommandParameter="{Binding .}"
-                                    Command="{Binding DataContext.EditCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
-                                    <Button Content="Ta bort"
-                                    Background="#F28B82"
-                                    Padding="5 5"
-                                    FontSize="10"
-                                    CommandParameter="{Binding Id}"
-                                    Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
-                                </StackPanel>
-                            </Grid>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
-            </Grid>
-        </Grid>
-
-
-
-
-
-
-
     </Grid>
-
 </UserControl>
         

@@ -4,7 +4,7 @@ namespace Presentation.ViewModels;
 
 public partial class StatusViewModelBase : ObservableObject
 {
-    // Refererar alltid till den senaste instansen av CancellationTokenSource som skapats i HideStatusSoon. När statusCts.Cancel() anropas (då ett nytt statusmeddelande visas) avbryts just den instansen, via token i Task.Delay.. Är null tills första gången HideStatusSoon() körs.
+    // Refererar alltid till den senaste instansen av CancellationTokenSource som skapats i HideStatusSoon. När statusCts.Cancel() anropas (då ett nytt statusmeddelande visas) avbryts just den instansen, via token i Task.Delay.. Är null tills första gången ClearStatusAfterAsync() körs.
     private CancellationTokenSource? _statusCts;
 
     [ObservableProperty]

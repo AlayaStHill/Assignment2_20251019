@@ -30,10 +30,10 @@ public class JsonRepository<T> : IRepository<T> where T : class
 
 
         if (!File.Exists(filePath))
-            // Om inte filen products.json finns på den angivna filsökvägen, skapa den och skriv in en tom lista i json-format
+            // Om inte filen products.json finns på den angivna filsökvägen, skapa den och skriv in en tom array i json-format (motsvarar en tom lista när den läses in)
             File.WriteAllText(filePath, "[]");
 
-        // Om filen finns men är tom/whitespace, initiera den till en tom lista
+        // Om filen finns men är tom/whitespace, initiera den till en tom array
         string existing = File.ReadAllText(filePath);
         if (string.IsNullOrWhiteSpace(existing))
             File.WriteAllText(filePath, "[]");
@@ -51,7 +51,6 @@ public class JsonRepository<T> : IRepository<T> where T : class
             List<T>? entities = JsonSerializer.Deserialize<List<T>>(json, _jsonOptions);
             return RepositoryResult<IEnumerable<T>>.OK(entities ?? []);
         }
-
         // Catch-block: fångar förväntade IO- och JSON-fel och mappar dem till RepositoryResult. ProductService hanterar endast avbryt och oväntade fel i sin egen logik.
         catch (OperationCanceledException) { throw; } // bubbla vidare så avbryt via cancellationtoken fungerar
         catch (JsonException ex)
