@@ -1,10 +1,10 @@
-﻿using ApplicationLayer.Results;
+﻿using ApplicationLayer.DTOs;
+using ApplicationLayer.Results;
 using ApplicationLayer.Services;
 using Domain.Entities;
 using Domain.Interfaces;
 using Domain.Results;
 using Moq;
-
 
 
 // Jag har använt AI och promptteknik som stöd i arbetet med att skriva testerna.
@@ -55,7 +55,6 @@ public class ProductService_Tests
         // kontrollera att ReadAsync anropades en gång
         _productRepoMock.Verify(repoMock => repoMock.ReadAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
-
 
     // Negative case: EnsureLoaded ska returnera ett ServiceResult med errormeddelande
     [Fact]
@@ -126,5 +125,99 @@ public class ProductService_Tests
         Assert.Empty(result.Data);                          
         Assert.NotNull(result.ErrorMessage);                
         Assert.Equal("Ett okänt fel uppstod vid filhämtning", result.ErrorMessage);
+    }
+
+
+    // Happy path: när request är giltig (validering lyckas) ska en ny produkt skapas och sparas.
+    [Fact]
+    public async Task SaveProductAsync_ShouldCreateAndSaveProduct_WhenValidRequest()
+    {
+        // ARRANGE: giltig request
+        ProductCreateRequest createRequest = new()
+        {
+            // mellanslag som ska trimmas bort
+            Name = "  Banan  ",    
+            Price = 6m
+        };
+
+        // EnsureLoadedAsync: simulera tom lista från ReadAsync
+        _productRepoMock
+            .Setup(repoMock => repoMock.ReadAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(RepositoryResult<IEnumerable<Product>>.OK(new List<Product>()));
+
+        // WriteAsync: simulera lyckad sparning
+        _productRepoMock
+            .Setup(repoMock => repoMock.WriteAsync(It.IsAny<IEnumerable<Product>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(RepositoryResult.NoContent());
+
+        // ACT: försök spara produkten
+        ServiceResult<Product> result = await _productService.SaveProductAsync(createRequest, CancellationToken.None);
+
+        // ASSERT: resultatet ska lyckas och innehålla den nya produkten
+        Assert.True(result.Succeeded);
+        Assert.Equal(201, result.StatusCode);
+        Assert.NotNull(result.Data); 
+        // namnet ska vara trimmat
+        Assert.Equal("Banan", result.Data.Name);     
+        Assert.Equal(6m, result.Data.Price);
+
+        // Kontrollera att WriteAsync anropades en gång
+        _productRepoMock.Verify(repoMock => repoMock.WriteAsync(It.IsAny<IEnumerable<Product>>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    // Negative case: när request är ogiltig (valideringen misslyckas) ska sparning inte ske.
+    [Fact]
+    public async Task SaveProductAsync_ShouldReturnError_WhenRequestIsInvalid()
+    {
+        // ARRANGE: ogiltigt request utan namn och pris (requestet innehåller både tomt namn och null-pris för att utlösa flera valideringsfel i samma test)
+        ProductCreateRequest createRequest = new()
+        {
+            Name = "",
+            Price = null
+        };
+
+        // ACT: försök spara produkten
+        ServiceResult<Product> result = await _productService.SaveProductAsync(createRequest, CancellationToken.None);
+
+        // ASSERT: resultatet ska signalera valideringsfel
+        Assert.False(result.Succeeded);
+        Assert.Equal(400, result.StatusCode);
+        // produkten ska inte finnas
+        Assert.Null(result.Data);                         
+        Assert.NotNull(result.ErrorMessage);              
+        Assert.Contains("Namn måste anges.", result.ErrorMessage);
+        Assert.Contains("Pris måste anges.", result.ErrorMessage);
+
+        // Kontrollera att WriteAsync aldrig anropades (eftersom request var ogiltig)
+        _productRepoMock.Verify(repoMock => repoMock.WriteAsync(It.IsAny<IEnumerable<Product>>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // Negative case: när pris är 0 eller negativt ska validering misslyckas.
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(-100)]
+    public async Task SaveProductAsync_ShouldReturnError_WhenPriceIsZeroOrNegative(decimal invalidPrice)
+    {
+        // ARRANGE: request med giltigt namn men ogiltigt pris
+        ProductCreateRequest createRequest = new()
+        {
+            Name = "Banan",
+            Price = invalidPrice
+        };
+
+        // ACT: försök spara produkten
+        ServiceResult<Product> result = await _productService.SaveProductAsync(createRequest, CancellationToken.None);
+
+        // ASSERT: resultatet ska signalera valideringsfel
+        Assert.False(result.Succeeded);
+        Assert.Equal(400, result.StatusCode);
+        // produkten ska inte skapas
+        Assert.Null(result.Data);                        
+        Assert.NotNull(result.ErrorMessage);       
+        Assert.Contains("Pris måste vara större än 0.", result.ErrorMessage);
+
+        // Kontrollera att WriteAsync aldrig anropades
+        _productRepoMock.Verify(repoMock => repoMock.WriteAsync(It.IsAny<IEnumerable<Product>>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }
