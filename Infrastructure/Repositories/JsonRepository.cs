@@ -78,11 +78,12 @@ public class JsonRepository<T> : IRepository<T> where T : class
         {
             string json = JsonSerializer.Serialize(entities, _jsonOptions);
             // fungerar med små filer. Stream tar bara 100 första delar upp stora filen i olika portioner effektivare- för systemet lättare med flera småbitar, kan deka ut i processorn i flera olika trådar istället för en enda stor tråd.
-            await File.WriteAllTextAsync(_filePath, json, ct); 
+            await File.WriteAllTextAsync(_filePath, json, ct);
 
             return RepositoryResult.NoContent();
 
         }
+        catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
             return RepositoryResult.InternalServerError($"Kunde inte spara till fil: {ex.Message}");

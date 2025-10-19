@@ -1,5 +1,4 @@
 ﻿using ApplicationLayer.Interfaces;
-using System.ComponentModel.DataAnnotations;
 
 namespace ApplicationLayer.DTOs;
 // Data Transfer Object (DTO). Används bara för att flytta data mellan lager (UI -> ProductService)

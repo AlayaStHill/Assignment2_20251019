@@ -39,7 +39,7 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
         // Catch-block: hanterar avbryt och oväntade buggar. Sådant som repot inte fångar
         catch (OperationCanceledException)
         {
-            return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = "Hämtning avbröts." };
+            return new ServiceResult { Succeeded = false, StatusCode = 408, ErrorMessage = "Hämtning avbröts av användaren." };
         }
         catch (Exception ex)
         {
@@ -84,7 +84,7 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
         }
         catch (OperationCanceledException) // cancelcommand via CancellationToken
         {
-            return new ServiceResult<Product> { Succeeded = false, StatusCode = 500, ErrorMessage = "Sparande avbröts" };
+            return new ServiceResult<Product> { Succeeded = false, StatusCode = 408, ErrorMessage = "Sparande avbröts av användaren" };
         }
         catch (Exception ex) // Oväntat fel som uppstått i SaveProductAsync()
         {
@@ -152,7 +152,7 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
         }
         catch (OperationCanceledException)
         {
-            return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = "Uppdatering avbröts" };
+            return new ServiceResult { Succeeded = false, StatusCode = 408, ErrorMessage = "Uppdatering avbröts av användaren" };
         }
         catch (Exception ex)
         {
@@ -186,7 +186,7 @@ public partial class ProductService(IRepository<Product> productRepository, IRep
         }
         catch (OperationCanceledException)
         {
-            return new ServiceResult { Succeeded = false, StatusCode = 500, ErrorMessage = "Borttagning avbröts" };
+            return new ServiceResult { Succeeded = false, StatusCode = 408, ErrorMessage = "Borttagning avbröts av användaren" };
         }
         catch (Exception ex)
         {

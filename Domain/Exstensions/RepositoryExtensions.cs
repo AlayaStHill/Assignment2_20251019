@@ -1,7 +1,7 @@
 ﻿using Domain.Interfaces;
 using Domain.Results;
 
-namespace Domain.Helpers;
+namespace Domain.Extensions;
 
 public static class RepositoryExtensions
 {

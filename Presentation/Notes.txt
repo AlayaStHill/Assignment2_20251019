@@ -1,35 +1,34 @@
-﻿För att uppnå kravet för väl godkänt krävs även följande:
-Du ska göra ytterligare en applikation, som ska vara en grafisk applikation (WPF/MAUI).
-* Det ska gå att navigera sig mellan två vyer. Ena vyn ska vara själva listan och den andra vyn ska vara en vy där du kan skapa och visa en produkt (du får ha dessa på två separata vyer om du så vill).
-Produkten ska även innehålla värden som kategori och tillverkare. Dessa ska då vara separata klasser.
-Du måste implementera interfaces.
-Du måste använda dig av Service Pattern och separera ansvarsområden.
-Utöver funktionalitet såsom att lägga till och visa alla produkter ska det nu även gå att uppdatera produktinformationen samt ta bort en produkt från listan. 
-Du ska även se till att en produkt inte kan läggas till två gånger eller att en tom produkt kan läggas till.
-* Du ska skapa enhetstester som testar alla dina funktioner som du har skapat.
-Lägg till en kontroll i funktionen som lägger till en produkt för att säkerställa att produkter med samma namn inte kan läggas till två gånger.
-Produktinformationen ska sparas ner till en .json-fil och ska även kunna hämtas upp när programmet startar och när ny lista ska hämtas.
-* Du måste göra enhetstester/integrationstester för samtlig funktionalitet såsom att lägga till, visa, uppdatera, ta bort, läsa in lista, spara lista.
-Du måste använda dig av Git/GitHub och använda dig av olika branches när du skapar din funktionalitet. Dina branches i GitHub får inte tas bort utan ska finnas kvar. Men den slutgiltiga inlämningen ska vara main/master-branchen.
-
----------------------------------------------------------------------------------
-
-WPF-element (också kallat kontroll): window, grid, button, slider, textbox etc.
-På Window-elementet finns olika attribut: title, xmlns, x:Class, source (src)
+﻿
 
 
 
 ---------------------------------------------------------------
-Branchen: 
-Refactor - ensure that products cannot be saved with empty or zero price:
-Change IProductRequest.Price from decimal to nullable decimal (decimal?), so wpf can bind empty textbox to null instead of keeping an old value. Catch null-value in Save-method and ProductService.ValidateRequest. 
-Update validation in ProductEditViewModel Save-methods and ProductService.ValidateRequest to reject null or <= 0. 
-Fix Price TextBox binding in ProductEdit- and AddView:
-- Changed to TwoWay binding so edits update ProductData.Price
-- Added UpdateSourceTrigger=PropertyChanged for immediate updates
-- Added TargetNullValue='' so null values show as empty string
+Branchen: feature/readme
 
-Fix(product): trim name before duplicate check
+Improve ProductListView styling for readability
+Add TextTrimming="CharacterEllipsis" with TextWrapping="NoWrap" on long text columns (Name, Category, Manufacturer).
+Add ToolTip bindings to show full text when truncated.
+Add ListView ItemContainerStyle with Padding=0 to align headers and rows precisely.
+Remove ListView border by setting BorderThickness="0" and BorderBrush="Transparent" to avoid extra lines between header and list.
+Remove unconditional FallbackValueTextStyle from Category/Manufacturer cells.- and add local style triggers to set gray/italic only when Text == "Ej inlagd".
+Right-align price column and use tabular numerals (TextAlignment="Right", Typography.NumeralAlignment="Tabular")
+
+
+Handle OperationCanceledException consistently
+Let repositories bubble up OperationCanceledException instead of mapping it to errors. 
+Catch it in ProductService methods and map to status code 408 with clear cancellation messages.
+
+
+
+På pris förklara:
+TextAlignment="Right" Typography.NumeralAlignment="Tabular"
+
+
+
+•	TextTrimming="CharacterEllipsis": Kortar text med … när den inte får plats.
+•	TextWrapping="NoWrap": Tvingar en rad (krävs för att ellips ska visas).
+•	ToolTip="{Binding Name}": Visar fullständig text vid hover, praktiskt när ellips döljer slutet.
+•	Behöll ItemContainerStyle med Padding=0 för att rubriker och rader ska linjera exakt.
 
 Redan commitat:
 
@@ -59,15 +58,11 @@ test: – när du lägger till eller ändrar tester
 
 ATT GÖRA:
 --------------
-Enhetstester xUnit 
-(integrationstest Repository??)
-
 Om tid: 
 Få in Header i ProductListView
 
 
 
-fix(ProductService.Helpers): update UpdateCategory- and UpdateManufacturer async with trim for correct dublettlogik?
 
 
 DDD (Domain-Driven Design)
@@ -83,29 +78,9 @@ Application =	 Use cases och affärslogik (vad systemet gör). Project Reference
 Infrastructure = Repositories och teknik (hur systemet lagrar data). Project Reference: Domain
 Presentation =	 UI/MVVM (hur användaren interagerar). Project Reference: Domain (Composition Root - DI-container)
 
+WPF-element (också kallat kontroll): window, grid, button, slider, textbox etc.
+På Window-elementet finns olika attribut: title, xmlns, x:Class, source (src)
 
 
-
-xUnit:
-kopiera interface + metoder i productservice. samma med fileservice och Ifileservice - detta ska testas
-extensionmethods + helpers men inte readasync i filerepository
-// helpers, extensionmethods testas, id visas i listvyn eller editvyn
-
-4.	Enhetstester
-•	Lägg till tester för:
-•	null pris
-•	0 pris
-•	negativt pris
-•	giltigt pris i både create och update.
-
-
-Repository: tekniskt skydd (filåtkomst, skrivfel)
-
-Service: affärslogiskt skydd (t.ex. “produkt finns redan”)
-
-ViewModel: användarskydd (UI’t kraschar inte)
-
-
----------------------------------------------------
 
 

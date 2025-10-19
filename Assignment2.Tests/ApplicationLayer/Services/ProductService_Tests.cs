@@ -4,7 +4,6 @@ using ApplicationLayer.Services;
 using Domain.Entities;
 using Domain.Interfaces;
 using Domain.Results;
-using Domain.Helpers;
 using Moq;
 // Jag har använt AI och promptteknik som stöd i arbetet med att skriva testerna.
 
@@ -98,11 +97,10 @@ public class ProductService_Tests
         // ASSERT: result ska vara lyckad och innehålla två produkter
         Assert.True(result.Succeeded);
         Assert.Equal(200, result.StatusCode);
-        // Säkerställ att Data inte är null innan nästa steg
-        Assert.NotNull(result.Data);
-        Assert.Equal(2, result.Data!.Count());
-        Assert.Contains(result.Data!, product => product.Name == "Banan");
-        Assert.Contains(result.Data!, product => product.Name == "Äpple");
+        // Säkerställer att Data inte är null, att produkterna har rätt namn och kollar listans count
+        Assert.Collection(result.Data!,
+            product => Assert.Equal("Banan", product.Name),
+            product => Assert.Equal("Äpple", product.Name));
     }
 
     // Negative case: GetProductsAsync ska returnera fel med tom produktlista
@@ -120,6 +118,7 @@ public class ProductService_Tests
         // ASSERT: result ska signalera fel
         Assert.False(result.Succeeded);
         Assert.Equal(500, result.StatusCode);
+        // Säkerställ att Data inte är null innan nästa steg
         Assert.NotNull(result.Data);                        
         Assert.Empty(result.Data);                          
         Assert.NotNull(result.ErrorMessage);                

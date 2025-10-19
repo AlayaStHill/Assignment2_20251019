@@ -1,9 +1,8 @@
-﻿using ApplicationLayer.DTOs;
-using ApplicationLayer.Helpers;
+﻿using ApplicationLayer.Helpers;
 using ApplicationLayer.Interfaces;
 using ApplicationLayer.Results;
 using Domain.Entities;
-using Domain.Helpers;
+using Domain.Extensions;
 using Domain.Results;
 namespace ApplicationLayer.Services;
 
@@ -19,7 +18,7 @@ public partial class ProductService
 
         List<string> errors = [];
 
-        if (string.IsNullOrWhiteSpace(request.Name))
+        if (string.IsNullOrWhiteSpace(name))
             errors.Add("Namn måste anges.");
 
         if (request.Price is null)

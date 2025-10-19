@@ -1,9 +1,9 @@
 ﻿using Domain.Interfaces;
 using Domain.Results;
-using Domain.Helpers;
+using Domain.Extensions;
 using Moq;
 // Jag har använt AI och promptteknik som stöd i arbetet med att skriva testerna.
-namespace Assignment2.Tests.Domain.Helpers;
+namespace Assignment2.Tests.Domain.Extensions;
 
 public class RepositoryExtensions_Tests
 {
