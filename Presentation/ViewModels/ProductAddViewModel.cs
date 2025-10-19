@@ -1,7 +1,6 @@
 ﻿using ApplicationLayer.DTOs;
 using ApplicationLayer.Interfaces;
 using ApplicationLayer.Results;
-using ApplicationLayer.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Domain.Entities;
