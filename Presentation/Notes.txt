@@ -1,8 +1,0 @@
-﻿ATT GÖRA:
---------------
-Om tid: 
-Egen avstängningsknapp i UI..
-
-
-
-
