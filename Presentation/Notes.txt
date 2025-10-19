@@ -1,7 +1,7 @@
 ﻿ATT GÖRA:
 --------------
 Om tid: 
-Egen avstängningsknapp i UI.
+Egen avstängningsknapp i UI..
 
 
 
