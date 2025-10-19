@@ -13,6 +13,8 @@ public partial class ProductListViewModel : StatusViewModelBase
 {
     private readonly IViewNavigationService _viewNavigationService;
     private readonly IProductService _productService;
+    // Undertryck statusmeddelande vid avbrott orsakat av navigering
+    private bool _suppressCancelStatus;
 
     // XAML kan bara binda publika properties. Readonly - värdet sätts i konstruktorn och kommandon ändras aldrig = ej ObservableProperty. ASYNCRelayCommand (-> LoadASYNC), kan skicka med en CancellationToken.
     public IAsyncRelayCommand LoadCommand { get; } // Initial laddning
@@ -58,7 +60,7 @@ public partial class ProductListViewModel : StatusViewModelBase
         // Ersätter inte ProductList-instansen utan fyller på samma lista. Tom lista så att loopen inte kraschar om Data är null. 
         ProductList.Clear();
 
-        // Låt UI visa att listan blev tom (och ta emot klick) ?????????????????????????
+        // Låt UI visa att listan blev tom (och ta emot klick) 
         await Task.Yield();
 
         foreach (Product product in loadResult.Data ?? [])
@@ -79,7 +81,8 @@ public partial class ProductListViewModel : StatusViewModelBase
         // OperationCanceledException fångas här för att ge feedback till användaren. OperationCanceledException i ProductService.EnsureLoaded stoppar själva arbetsprocessen.
         catch (OperationCanceledException) 
         {
-            SetStatus("Laddning avbröts.", "red");
+            if (!_suppressCancelStatus)
+                SetStatus("Laddning avbröts.", "red");
         }
         // Fångar tekniska/oförutsedda fel
         catch (Exception ex) 
@@ -93,7 +96,10 @@ public partial class ProductListViewModel : StatusViewModelBase
         try
         {
             IsLoading = true;
-            SetStatus("Laddar om...", "black");
+
+            // Visa inte: Laddar om..., om vi undertrycker status vid navigering
+            if (!_suppressCancelStatus)
+                SetStatus("Laddar om...", "black");
 
             // Simulerar fördröjning i laddningen av listan 
             await Task.Delay(3000, ct);
@@ -107,7 +113,8 @@ public partial class ProductListViewModel : StatusViewModelBase
         }
         catch (OperationCanceledException) // Fångar CancelRefresh
         {
-            SetStatus("Omladdning avbröts.", "red");
+            if (!_suppressCancelStatus)
+                SetStatus("Omladdning avbröts.", "red");
         }
         // Garanterar att UI inte "fastnar" i laddning-läge
         finally
@@ -127,8 +134,33 @@ public partial class ProductListViewModel : StatusViewModelBase
 
 
     [RelayCommand] // Kopplingen mellan UI-kontroller (Button ex) och ViewModelns metoder. Istället för att viewn direkt anropar dem i code-behind (ej MVVM). Command="{Binding NavigateTo..Command}" fungerar nu i viewn.
-    private void NavigateToProductAddView()
+    private async Task NavigateToProductAddView()
     {
+        if (RefreshCommand.IsRunning)
+        {
+            // undertryck status just för detta avbrott
+            _suppressCancelStatus = true;
+
+            try
+            {
+                RefreshCommand.Cancel();
+                if (RefreshCommand.ExecutionTask is not null)
+                    // vänta tills avbrottet slagit igenom
+                    await RefreshCommand.ExecutionTask; 
+            }
+            catch (OperationCanceledException)
+            {
+                // förväntat vid avbrott
+            }
+            finally
+            {
+                _suppressCancelStatus = false;
+            }
+        }
+
+        // Rensa ev. kvarvarande Laddar om...
+        await ClearStatusAfterAsync(0);
+
         _viewNavigationService.NavigateTo<ProductAddViewModel>();
     }
 

@@ -26,12 +26,12 @@
         <StackPanel Grid.Row="2">
             <StackPanel Margin="0 0 0 10">
                 <Label Content="Namn" />
-                <TextBox Text="{Binding ProductData.Name}" Margin="5 0 5 0"/>
+                <TextBox Text="{Binding ProductData.Name}" Margin="5 0 5 0" />
             </StackPanel>
 
             <StackPanel Margin="0 0 0 10">
                 <Label Content="Pris (SEK)" />
-                <TextBox Text="{Binding ProductData.Price, UpdateSourceTrigger=PropertyChanged, TargetNullValue=''}" Margin="5 0 5 0"/>
+                <TextBox Text="{Binding ProductData.Price, UpdateSourceTrigger=PropertyChanged, TargetNullValue=''}" Margin="5 0 5 0" />
             </StackPanel>
 
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0 10 6 0">
