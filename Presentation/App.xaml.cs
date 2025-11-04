@@ -43,7 +43,7 @@ namespace Presentation
                     services.AddTransient<ProductAddView>();
 
                     services.AddScoped<ProductEditViewModel>();
-                    //services.AddScoped<ProductEditView>();
+                    services.AddScoped<ProductEditView>();
 
 
                 })
@@ -65,7 +65,7 @@ namespace Presentation
             
             // Hämtar MainWindow från DI
             MainWindow mainWindow = _host!.Services.GetRequiredService<MainWindow>();
-            // Mappar MainWindow till MainViewModel. Görs ju i MainWindow.xaml??
+            // Mappar MainWindow till MainViewModel. 
             mainWindow.DataContext = mainViewModel;
 
             mainWindow.Show();

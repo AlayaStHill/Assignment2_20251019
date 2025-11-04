@@ -1,1 +1,8 @@
-﻿
+﻿ATT GÖRA:
+- Göra så att man kan använda komma när man anger pris
+
+_isLoading i productlistview används inte men rekommenderas vara kvar och bindas i XAML
+
+Att commita:
+Add cancellation support and status suppression for load, refresh, and delete commands
+

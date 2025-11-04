@@ -25,11 +25,10 @@ public partial class ProductListViewModel : StatusViewModelBase
         _viewNavigationService = navigationService;
         _productService = productService;
 
-        //Kopplar kommandona till LoadAsync. AsyncRelay.. injicerar CancellationToken i LoadAsync  - execute-metoden (den metod som exekveras när LoadCommand körs) 
+        // Kopplar kommandona till LoadAsync. AsyncRelay.. injicerar CancellationToken i LoadAsync  - execute-metoden (den metod som exekveras när LoadCommand körs) 
         // Att wrappa en async-metod i ett kommando fungerar likt _ (fire-and-forget), konstruktorn behöver inte vänta
         LoadCommand = new AsyncRelayCommand(LoadAsync);
         RefreshCommand = new AsyncRelayCommand(RefreshAsync);
-        //AbortCommand = new AsyncRelayCommand(AbortAsync);
 
         // LoadCommand körs direkt när ViewModel skapas, dvs laddning av listan  
         LoadCommand.Execute(null);
@@ -76,6 +75,7 @@ public partial class ProductListViewModel : StatusViewModelBase
     {
         try
         {
+            IsLoading = true;
             await PopulateProductListAsync(ct);
         }
         // OperationCanceledException fångas här för att ge feedback till användaren. OperationCanceledException i ProductService.EnsureLoaded stoppar själva arbetsprocessen.
@@ -89,6 +89,7 @@ public partial class ProductListViewModel : StatusViewModelBase
         {
             SetStatus($"Ett oväntat fel uppstod: {ex.Message}", "red");
         }
+        finally {  IsLoading = false; }
     }
 
     private async Task RefreshAsync(CancellationToken ct) 
@@ -132,41 +133,64 @@ public partial class ProductListViewModel : StatusViewModelBase
         }
     }
 
+    // Avbryt ev. pågående Load/Refresh/Delete och undertryck statusmeddelanden tills pågående tasks är färdiga eller avbrutna
+    private async Task CancelOngoingLoadsAsync(bool suppressStatus = true) 
+    {
+        if (!(RefreshCommand.IsRunning || LoadCommand.IsRunning))
+            return;
+
+        // previous sparar _suppressStatusCancel värdet så som det var innan CancelOngoingLoads anropades. Detta skyddar mot överkörning av ett redan aktivt läge och gör undertryckningen lokal och tillfällig. 
+        bool previous = _suppressCancelStatus;
+        // sätter det tillfälliga värdet
+        _suppressCancelStatus = suppressStatus;
+
+        try
+        {
+            RefreshCommand.Cancel();
+            LoadCommand.Cancel();
+
+            // ExecutionTask: en property på AsyncRelayCommand. Referens till den Task som just nu körs av kommandot. Om inget körs = null. Om Refresh- eller LoadCommand körs, pekar den på den pågående Tasken.
+            Task waitRefresh = RefreshCommand.ExecutionTask ?? Task.CompletedTask;
+            // CompletedTask: en inbyggd statisk property i .NET. Representerar en Task som redan är färdig. Används som dummy när det inte finns någon riktig Task att vänta på. 
+            Task waitLoad = LoadCommand.ExecutionTask ?? Task.CompletedTask;
+
+            // Väntar till Refresh-, och/eller LoadCommand är färdiga eller avbrutna innan finally körs. Utan await körs finally direkt och _suppressCancelStatus skulle återställas för tidigt.  
+            // _suppressCancelStatus är = true under hela perioden tills uppgifterna verkligen avslutats.
+            try { await Task.WhenAll(waitRefresh, waitLoad); }
+            catch (OperationCanceledException) { }
+        }
+        finally
+        {
+            // återställ till tidigare värde (sker utan att ev. avaktivera undertryck läge som en annan process behövde, ex. två navigeringar som startar nära varandra)
+            _suppressCancelStatus = previous;
+        }
+    }
 
     [RelayCommand] // Kopplingen mellan UI-kontroller (Button ex) och ViewModelns metoder. Istället för att viewn direkt anropar dem i code-behind (ej MVVM). Command="{Binding NavigateTo..Command}" fungerar nu i viewn.
     private async Task NavigateToProductAddView()
     {
-        if (RefreshCommand.IsRunning)
-        {
-            // undertryck status just för detta avbrott
-            _suppressCancelStatus = true;
-
-            try
-            {
-                RefreshCommand.Cancel();
-                if (RefreshCommand.ExecutionTask is not null)
-                    // vänta tills avbrottet slagit igenom
-                    await RefreshCommand.ExecutionTask; 
-            }
-            catch (OperationCanceledException)
-            {
-                // förväntat vid avbrott
-            }
-            finally
-            {
-                _suppressCancelStatus = false;
-            }
-        }
-
-        // Rensa ev. kvarvarande Laddar om...
+        // (param: value) named argument, ett sätt att skriva ut vilken parameter värdet gäller för. Mer läsbart än (true)
+        await CancelOngoingLoadsAsync(suppressStatus: true);
         await ClearStatusAfterAsync(0);
-
+        // Säkerställer att UI inte "fastnar" i laddning-läge om RefreshAsync blir avbruten av navigeringen och inte når finally-blocket
+        IsLoading = false;
         _viewNavigationService.NavigateTo<ProductAddViewModel>();
     }
 
     [RelayCommand]
-    private void Edit(Product selectedProduct)
+    private async Task Edit(Product? selectedProduct)
     {
+        // Null-check: om bindningen av CommandParameter misslyckas blir parametern null. (Bindningen från radens dataobjekt (Product) till metodparametern selectedProduct).
+        if (selectedProduct is null)
+        {
+            SetStatus("Välj en produkt att redigera.", "red");
+            return;
+        }
+
+        await CancelOngoingLoadsAsync(suppressStatus: true);
+        await ClearStatusAfterAsync(0);
+        IsLoading = false;
+
         ProductUpdateRequest dto = new ProductUpdateRequest
         {
             Id = selectedProduct.Id,
@@ -180,12 +204,13 @@ public partial class ProductListViewModel : StatusViewModelBase
         _viewNavigationService.NavigateTo<ProductEditViewModel>(viewmodel => viewmodel.SetProduct(dto));
     }
 
-    [RelayCommand] 
-    private async Task Delete(string productId) 
+    // CancellationToken: kortvarig process men blir konsekvent med övriga asynkrona metoder och kan avbrytas vid navigering. Delete är disk-I/O och kan potentiellt ta tid om disken är upptagen/låst/stor.
+    [RelayCommand] // Skickar automatiskt in token när kommandot körs
+    private async Task Delete(string productId, CancellationToken ct) 
     {
         try // Pratar med fil -> try-catch fånga oförutsedda tekniska fel
         {
-            ServiceResult deleteResult = await _productService.DeleteProductAsync(productId); 
+            ServiceResult deleteResult = await _productService.DeleteProductAsync(productId, ct); 
             if (!deleteResult.Succeeded)
             {
                 SetStatus(deleteResult.ErrorMessage ?? "Kunde inte ta bort produkten", "red");
@@ -193,7 +218,8 @@ public partial class ProductListViewModel : StatusViewModelBase
                 return; 
             }
 
-            await PopulateProductListAsync();
+            // Uppdatera listan med samma ct, så avbryts även detta om användaren avbryter
+            await PopulateProductListAsync(ct);
 
             SetStatus("Produkten har tagits bort", "green");
         }
@@ -219,5 +245,15 @@ Nästa gång en async metod, som accepterar token (cancellation-aware)anropas, k
 
 OperationCanceledException bubblar vidare till EnsureLoaded - som fångar det i sin catch (OperationCanceledException)
 och returnerar ErrorMessage: "Hämtning avbröts".
+*/
+
+/*
+Händelseförlopp RefreshAsync:
+1. Användaren klickar på “Ladda om”.
+2. RefreshCommand.Execute() körs.
+3. AsyncRelayCommand startar RefreshAsync i en ny task.
+4. Den tasken sparas i RefreshCommand.ExecutionTask.
+Så länge RefreshAsync körs, är ExecutionTask en pekare till den metoden.
+5. När RefreshAsync är färdig blir ExecutionTask null igen.
 */
 
